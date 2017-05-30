@@ -1,67 +1,43 @@
 use std::cmp::Ordering;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Copy)]
 pub struct Order {
-    account: String,
-    ciord_id: String,
     order_qty: u64,
-    order_type: char,
     price: u64,
     side: char, // 1: buy, 2: sell
-    symbol: String,
 }
 
 impl Order {
     pub fn new(m_qty: u64, m_price: u64, m_side: char) -> Order { 
         Order {
-            account: "String".to_string(),
-            ciord_id: "String".to_string(),
             order_qty: m_qty,
-            order_type: '0',
-            price: 0,
-            side: '0',
-            symbol: "String".to_string()
+            price: m_price,
+            side: m_side,
         }
     }
 
-    pub fn get_account(&self) -> &String {
-        &self.account
-    }    
-
-    pub fn get_id(&self) -> &String {
-        &self.ciord_id
-    }
-
     pub fn get_qty(&self) -> u64 {
-        &self.order_qty
+        self.order_qty
     }    
-
-    pub fn get_type(&self) -> char {
-        &self.order_type
-    }
 
     pub fn get_price(&self) -> u64 {
-        &self.price
+        self.price
     }
 
     pub fn get_side(&self) -> char {
         self.side
     }
 
-    pub fn get_symbol(&self) -> &String {
-        &self.ciord_id
+    pub fn set_qty(&mut self, m_qty: u64) {
+        self.order_qty = m_qty;
+    }    
+
+    pub fn set_price(&mut self, m_price: u64) {
+        self.price = m_price;
     }
 
-    pub fn set_account(&mut self, m_acc: &String) {
-        self.account = m_acc.to_string();
-    }
-
-    pub fn set_account(&mut self, m_acc: &String) {
-        self.account = m_acc.to_string();
-    }
-
-    pub fn set_account(&mut self, m_acc: &String) {
-        self.account = m_acc.to_string();
+    pub fn set_side(&mut self, m_side: char) {
+        self.side = m_side;
     }    
 }
 
@@ -69,6 +45,10 @@ impl Eq for Order {}
 
 impl PartialOrd for Order {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        /* 
+            Sell side
+            Reverse default ordering to obtain min heap
+        */
         if self.side == '2' {
             other.price.partial_cmp(&self.price)
         } else {
@@ -80,6 +60,10 @@ impl PartialOrd for Order {
 impl Ord for Order {
     fn cmp(&self, other: &Order) -> Ordering {
         let ord = self.partial_cmp(other).unwrap();
+        /* 
+            Sell side
+            Reverse default ordering to obtain min heap
+        */        
         if self.side == '2' {
             match ord {
                 Ordering::Greater => Ordering::Less,
@@ -93,5 +77,11 @@ impl Ord for Order {
                 Ordering::Equal => ord,
             }       
         }
+    }
+}
+
+impl Clone for Order {
+    fn clone(&self) -> Order {
+        *self
     }
 }
