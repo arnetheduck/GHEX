@@ -82,6 +82,15 @@ impl MatchingEngine {
     	println!("SUMMARY");
     	println!();
 
+    	println!("Buy orders:");
+    	let clone_buy_orders = self.buy_orders.clone();
+    	let buy_vec = clone_buy_orders.into_sorted_vec();
+    	for order in &buy_vec {
+    		println!("{:?}", order);
+    	}
+
+    	println!();
+
     	println!("Sell orders:");    	
     	let clone_sell_orders = self.sell_orders.clone();
     	let sell_vec = clone_sell_orders.into_sorted_vec();
@@ -89,12 +98,6 @@ impl MatchingEngine {
     		println!("{:?}", order);
     	}
 
-    	println!("Buy orders:");
-    	let clone_buy_orders = self.buy_orders.clone();
-    	let buy_vec = clone_buy_orders.into_sorted_vec();
-    	for order in &buy_vec {
-    		println!("{:?}", order);
-    	}
     	println!("---------------------------------------------------");
     }
 }
