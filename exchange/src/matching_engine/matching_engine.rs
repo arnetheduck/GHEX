@@ -82,20 +82,26 @@ impl MatchingEngine {
     	println!("SUMMARY");
     	println!();
 
-    	println!("Buy orders:");
-    	let clone_buy_orders = self.buy_orders.clone();
-    	let buy_vec = clone_buy_orders.into_sorted_vec();
-    	for order in &buy_vec {
-    		println!("{:?}", order);
+    	println!("{0: <10} | {1: <10} | {2: <10}", 
+        "buy", "PRICE", "sell");
+        println!("---------------------------------");
+
+
+    	let clone_sell_orders = self.sell_orders.clone();
+    	let sell_vec = clone_sell_orders.into_sorted_vec();
+    	for order in &sell_vec {
+    		println!("{0: <10} | {1: <10} | {2: <10}", 
+        	0, order.get_price(), order.get_qty());
     	}
 
     	println!();
 
-    	println!("Sell orders:");    	
-    	let clone_sell_orders = self.sell_orders.clone();
-    	let sell_vec = clone_sell_orders.into_sorted_vec();
-    	for order in &sell_vec {
-    		println!("{:?}", order);
+    	let clone_buy_orders = self.buy_orders.clone();
+    	let mut buy_vec: Vec<Order> = clone_buy_orders.into_sorted_vec();
+    	let buy_vec: Vec<Order> = buy_vec.iter().rev().cloned().collect();
+    	for order in &buy_vec {
+    		println!("{0: <10} | {1: <10} | {2: <10}", 
+        	order.get_qty(), order.get_price(), 0);
     	}
 
     	println!("---------------------------------------------------");
