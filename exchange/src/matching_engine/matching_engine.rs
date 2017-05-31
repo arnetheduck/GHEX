@@ -3,11 +3,18 @@ use std::collections::BinaryHeap;
 use objects::Order;
 
 pub struct MatchingEngine {
-    sell_orders: BinaryHeap<Order>, // min heap
-    buy_orders: BinaryHeap<Order>, // max heap    
+    sell_orders: BinaryHeap<Order>, // All sell orders, min heap
+    buy_orders: BinaryHeap<Order>, // All buy orders, max heap    
 }
 
 impl MatchingEngine {
+	/*
+		Constructor
+		@params 
+			None
+		@return
+			New matching engine with empty priority queues for sell and buy orders
+	*/
     pub fn new() -> MatchingEngine { 
     	MatchingEngine {
             sell_orders: BinaryHeap::new(),
@@ -15,68 +22,92 @@ impl MatchingEngine {
     	}
     }
 
+    /*
+    	This functions take an order and match it with existing orders in matching engine
+    	@params
+    		order: order to insert
+    */
     pub fn insert(&mut self, order: &Order) {
     	let mut cur_order = order.clone();
 
     	if cur_order.get_side() == '1' { 
     		// Buy side
     		// Look at order book and match (if possible)
-
     		while !self.sell_orders.is_empty() {
-    			// stop matching when price of buy order is slower than all sell orders
+    			// Stop matching when price of buy order is slower than all sell orders
     			// or when the current order is fully matched	
     			if self.sell_orders.peek().unwrap().get_price() > cur_order.get_price() || cur_order.get_qty() == 0 { 
     				break; 
     			}
 
-    			// match happens
+    			// MATCHING HAPPENS
+    			// Get sell order with highest priority (price and time priority)
     			let mut min_sell: Order = self.sell_orders.pop().unwrap();
+    			// Determine quantity matched
+    			// i.e, Minimum quantity of buy and sell order
     			let qty_trade = min(min_sell.get_qty(), cur_order.get_qty());
-    			
+    			// Update the remaining quantity for sell order
     			let min_sell_qty = min_sell.get_qty();
     			min_sell.set_qty(min_sell_qty - qty_trade);
+    			// Update the remaining quantity for buy order (new order inserted)
     			let cur_order_qty = cur_order.get_qty();
     			cur_order.set_qty(cur_order_qty - qty_trade);
 
+    			// When the remaining quantity of sell order is non-zero
+    			// push sell order back into order book
     			if min_sell.get_qty() > 0 {
     				self.sell_orders.push(min_sell);
     			}
     		}
     		
+    		// When the remaining quantity of buy order (new order inserted) is non-zero
+    		// push buy order into order book
     		if cur_order.get_qty() > 0 {
     			self.buy_orders.push(cur_order);
     		}
     	} else { 
     		// Sell side
     		// Look at order book and match (if possible)
-
     		while !self.buy_orders.is_empty() {
-    			// stop matching when price of sell order is higher than all buy orders
+    			// Stop matching when price of sell order is higher than all buy orders
     			// or when the current order is matched
     			if self.buy_orders.peek().unwrap().get_price() < cur_order.get_price() || cur_order.get_qty() == 0 { 
     				break; 
     			}
 
-    			// match happens
+    			// MATCHING HAPPENS
+    			// Get buy order with highest priority (price and time priority)
     			let mut max_buy: Order = self.buy_orders.pop().unwrap();
+    			// Determine quantity matched
+    			// i.e, Minimum quantity of buy and sell order    			
     			let qty_trade = min(max_buy.get_qty(), cur_order.get_qty());
-    			
+    			// Update the remaining quantity for buy order    			
     			let max_buy_qty = max_buy.get_qty();
     			max_buy.set_qty(max_buy_qty - qty_trade);
+    			// Update the remaining quantity for sell order (new order inserted)    			
     			let cur_order_qty = cur_order.get_qty();
     			cur_order.set_qty(cur_order_qty - qty_trade);
 
+    			// When the remaining quantity of buy order is non-zero
+    			// push buy order back into order book
     			if max_buy.get_qty() > 0 {
     				self.buy_orders.push(max_buy);
     			}
     		}
-    		
+
+    		// When the remaining quantity of sell order (new order inserted) is non-zero
+    		// push sell order into order book    		
     		if cur_order.get_qty() > 0 {
     			self.sell_orders.push(cur_order);
     		}
     	}
     }
 
+    /*
+    	This function prints market status, listing all orders in order
+    	Sell orders (if any) come first, in descending order of priority
+    	Buy orders (if any) come after, in ascending order of priority
+    */
     pub fn print_status(&self) {
     	println!("-------------------------------------------------------------------------------");
     	println!("SUMMARY");
@@ -86,7 +117,7 @@ impl MatchingEngine {
         "TransactTime", "buy", "PRICE", "sell");
         println!("-----------------------------------------------------------");
 
-
+        // List the sell orders
     	let clone_sell_orders = self.sell_orders.clone();
     	let sell_vec = clone_sell_orders.into_sorted_vec();
     	for order in &sell_vec {
@@ -96,6 +127,7 @@ impl MatchingEngine {
 
     	println!();
 
+    	// List the buy orders
     	let clone_buy_orders = self.buy_orders.clone();
     	let buy_vec: Vec<Order> = clone_buy_orders.into_sorted_vec();
     	let buy_vec: Vec<Order> = buy_vec.iter().rev().cloned().collect();

@@ -16,13 +16,13 @@ fn insert_new_order(match_eng: &mut matching_engine::MatchingEngine) {
 	println!("Price: ");
 	let mut m_price = String::new();
 	io::stdin().read_line(&mut m_price);
-	let m_price = m_price.trim().parse::<u64>().unwrap();
+	let m_price = m_price.trim().parse::<i64>().unwrap();
 	// println!("{}", m_price);
 
 	println!("Quantity: ");
 	let mut m_qty = String::new();
 	io::stdin().read_line(&mut m_qty);
-	let m_qty = m_qty.trim().parse::<u64>().unwrap();
+	let m_qty = m_qty.trim().parse::<i64>().unwrap();
 	// println!("{}", m_qty);		
 
 	match_eng.insert(&objects::Order::new(m_qty, m_price, m_side));
