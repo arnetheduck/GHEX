@@ -1,18 +1,25 @@
 use std::cmp::Ordering;
 
-#[derive(PartialEq, Debug, Copy)]
+extern crate time;
+
+#[derive(PartialEq, Debug, Clone)]
 pub struct Order {
     order_qty: u64,
     price: u64,
     side: char, // 1: buy, 2: sell
+    transact_time: String,
 }
 
 impl Order {
     pub fn new(m_qty: u64, m_price: u64, m_side: char) -> Order { 
+        let mut cur_time: String = time::now_utc().strftime("%Y%m%d-%H:%M:%S.%f").unwrap().to_string();
+        cur_time.truncate(21);
+        
         Order {
             order_qty: m_qty,
             price: m_price,
             side: m_side,
+            transact_time: cur_time,
         }
     }
 
@@ -28,6 +35,10 @@ impl Order {
         self.side
     }
 
+    pub fn get_transact_time(&self) -> String {
+        self.transact_time.clone()
+    }
+
     pub fn set_qty(&mut self, m_qty: u64) {
         self.order_qty = m_qty;
     }    
@@ -39,6 +50,10 @@ impl Order {
     pub fn set_side(&mut self, m_side: char) {
         self.side = m_side;
     }    
+
+    pub fn set_transact_time(&mut self, m_time: &String) {
+        self.transact_time = m_time.clone();
+    }
 }
 
 impl Eq for Order {}
@@ -77,11 +92,5 @@ impl Ord for Order {
                 Ordering::Equal => ord,
             }       
         }
-    }
-}
-
-impl Clone for Order {
-    fn clone(&self) -> Order {
-        *self
     }
 }

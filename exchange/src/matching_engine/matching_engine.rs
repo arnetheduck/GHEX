@@ -16,7 +16,7 @@ impl MatchingEngine {
     }
 
     pub fn insert(&mut self, order: &Order) {
-    	let mut cur_order = *order;
+    	let mut cur_order = order.clone();
 
     	if cur_order.get_side() == '1' { 
     		// Buy side
@@ -78,20 +78,20 @@ impl MatchingEngine {
     }
 
     pub fn print_status(&self) {
-    	println!("---------------------------------------------------");
+    	println!("-------------------------------------------------------------------------------");
     	println!("SUMMARY");
     	println!();
 
-    	println!("{0: <10} | {1: <10} | {2: <10}", 
-        "buy", "PRICE", "sell");
-        println!("-------------------------------------");
+    	println!("{0: <20} | {1: <10} | {2: <10} | {3: <10}", 
+        "TransactTime", "buy", "PRICE", "sell");
+        println!("-----------------------------------------------------------");
 
 
     	let clone_sell_orders = self.sell_orders.clone();
     	let sell_vec = clone_sell_orders.into_sorted_vec();
     	for order in &sell_vec {
-    		println!("{0: <10} | {1: <10} | {2: <10}", 
-        	" ", order.get_price(), order.get_qty());
+    		println!("{0: <20} | {1: <10} | {2: <10} | {3: <10}", 
+        	order.get_transact_time(), " ", order.get_price(), order.get_qty());
     	}
 
     	println!();
@@ -100,10 +100,10 @@ impl MatchingEngine {
     	let buy_vec: Vec<Order> = clone_buy_orders.into_sorted_vec();
     	let buy_vec: Vec<Order> = buy_vec.iter().rev().cloned().collect();
     	for order in &buy_vec {
-    		println!("{0: <10} | {1: <10} | {2: <10}", 
-        	order.get_qty(), order.get_price(), " ");
+    		println!("{0: <20} | {1: <10} | {2: <10} | {3: <10}", 
+        	order.get_transact_time(), order.get_qty(), order.get_price(), " ");
     	}
 
-    	println!("---------------------------------------------------");
+    	println!("-------------------------------------------------------------------------------");
     }
 }
