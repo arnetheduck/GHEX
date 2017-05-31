@@ -14,7 +14,7 @@ impl Order {
     pub fn new(m_qty: u64, m_price: u64, m_side: char) -> Order { 
         let mut cur_time: String = time::now_utc().strftime("%Y%m%d-%H:%M:%S.%f").unwrap().to_string();
         cur_time.truncate(21);
-        
+
         Order {
             order_qty: m_qty,
             price: m_price,
@@ -65,9 +65,17 @@ impl PartialOrd for Order {
             Reverse default ordering to obtain min heap
         */
         if self.side == '2' {
-            other.price.partial_cmp(&self.price)
+            if other.price.eq(&self.price) {
+                other.transact_time.partial_cmp(&self.transact_time)
+            } else {
+                other.price.partial_cmp(&self.price)
+            }
         } else {
-            self.price.partial_cmp(&other.price)
+            if other.price.eq(&self.price) {
+                other.transact_time.partial_cmp(&self.transact_time)
+            } else {            
+                self.price.partial_cmp(&other.price)
+            }
         }
     }
 }
