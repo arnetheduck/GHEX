@@ -103,7 +103,7 @@ impl PartialOrd for Order {
             // Reverse default ordering to obtain min heap
             if other.price.eq(&self.price) {
                 // Consider time priority only if the orders have same price
-                // i.e, Smaller transaction time (come first), higher priority
+                // i.e, Earlier transaction time, higher priority
                 other.transact_time.partial_cmp(&self.transact_time)
             } else {
                 // Else consider price priority
@@ -115,7 +115,7 @@ impl PartialOrd for Order {
             // Default ordering to obtain max heap
             if other.price.eq(&self.price) {
                 // Consider time priority only if the orders have same price
-                // i.e, Smaller transaction time (come first), higher priority
+                // i.e, Earlier transaction time, higher priority
                 other.transact_time.partial_cmp(&self.transact_time)
             } else {            
                 // Else consider price priority

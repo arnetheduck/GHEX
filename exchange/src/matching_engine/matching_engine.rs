@@ -23,7 +23,7 @@ impl MatchingEngine {
     }
 
     /*
-    	This functions take an order and match it with existing orders in matching engine
+    	Take an order and match it with existing orders in matching engine
     	@params
     		order: order to insert
     */
@@ -34,7 +34,7 @@ impl MatchingEngine {
     		// Buy side
     		// Look at order book and match (if possible)
     		while !self.sell_orders.is_empty() {
-    			// Stop matching when price of buy order is slower than all sell orders
+    			// Stop matching when price of buy order is lower than all sell orders
     			// or when the current order is fully matched	
     			if self.sell_orders.peek().unwrap().get_price() > cur_order.get_price() || cur_order.get_qty() == 0 { 
     				break; 
@@ -53,15 +53,15 @@ impl MatchingEngine {
     			let cur_order_qty = cur_order.get_qty();
     			cur_order.set_qty(cur_order_qty - qty_trade);
 
-    			// When the remaining quantity of sell order is non-zero
-    			// push sell order back into order book
+    			// If remaining quantity of sell order is non-zero
+    			// push sell order back onto order book
     			if min_sell.get_qty() > 0 {
     				self.sell_orders.push(min_sell);
     			}
     		}
     		
-    		// When the remaining quantity of buy order (new order inserted) is non-zero
-    		// push buy order into order book
+    		// If remaining quantity of buy order is non-zero
+    		// push buy order onto order book
     		if cur_order.get_qty() > 0 {
     			self.buy_orders.push(cur_order);
     		}
@@ -88,15 +88,15 @@ impl MatchingEngine {
     			let cur_order_qty = cur_order.get_qty();
     			cur_order.set_qty(cur_order_qty - qty_trade);
 
-    			// When the remaining quantity of buy order is non-zero
-    			// push buy order back into order book
+    			// If remaining quantity of buy order is non-zero
+    			// push buy order back onto order book
     			if max_buy.get_qty() > 0 {
     				self.buy_orders.push(max_buy);
     			}
     		}
 
-    		// When the remaining quantity of sell order (new order inserted) is non-zero
-    		// push sell order into order book    		
+    		// If remaining quantity of sell order is non-zero
+    		// push sell order onto order book    		
     		if cur_order.get_qty() > 0 {
     			self.sell_orders.push(cur_order);
     		}
