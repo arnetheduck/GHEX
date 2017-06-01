@@ -25,8 +25,23 @@ fn insert_new_order(match_eng: &mut matching_engine::MatchingEngine) {
 	let m_qty = m_qty.trim().parse::<i64>().unwrap();
 	// println!("{}", m_qty);		
 
-	match_eng.insert(&objects::Order::new(m_qty, m_price, m_side));
+	print_transactions(match_eng.insert(&objects::Order::new(m_qty, m_price, m_side)));
+
 	match_eng.print_status();
+}
+
+fn print_transactions(orders_matched: Vec<(objects::Order, objects::Order)>) {
+	println!("-------------------------------------------------------------------------------");
+	println!("TRANSACTIONS");
+
+	println!("{0: ^30} | {1: ^30}", "BUY", "SELL");
+	println!("-----------------------------------------------------------");
+
+	for (buy_order, sell_order) in orders_matched {
+		let s = "Price = ".to_string() + buy_order.get_price().to_string().as_str() + ", Quantity = " + buy_order.get_qty().to_string().as_str();		
+		let t = "Price = ".to_string() + sell_order.get_price().to_string().as_str() + ", Quantity = " + sell_order.get_qty().to_string().as_str();
+		println!("{0: <30} | {1: <30}", s, t);
+	}
 }
 
 fn get_market_status(match_eng: &matching_engine::MatchingEngine) {

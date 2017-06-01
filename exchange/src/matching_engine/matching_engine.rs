@@ -27,7 +27,9 @@ impl MatchingEngine {
     	@params
     		order: order to insert
     */
-    pub fn insert(&mut self, order: &Order) {
+    pub fn insert(&mut self, order: &Order) -> Vec<(Order, Order)> {
+    	let mut matched_orders: Vec<(Order, Order)> = Vec::new();
+
     	let mut cur_order = order.clone();
 
     	if cur_order.get_side() == '1' { 
@@ -43,9 +45,15 @@ impl MatchingEngine {
     			// MATCHING HAPPENS
     			// Get sell order with highest priority (price and time priority)
     			let mut min_sell: Order = self.sell_orders.pop().unwrap();
+
+    			let mut m_sell_order = min_sell.clone();
+    			let mut m_buy_order = cur_order.clone();
+    			matched_orders.push((m_buy_order, m_sell_order));
+
     			// Determine quantity matched
     			// i.e, Minimum quantity of buy and sell order
     			let qty_trade = min(min_sell.get_qty(), cur_order.get_qty());
+
     			// Update the remaining quantity for sell order
     			let min_sell_qty = min_sell.get_qty();
     			min_sell.set_qty(min_sell_qty - qty_trade);
@@ -78,9 +86,15 @@ impl MatchingEngine {
     			// MATCHING HAPPENS
     			// Get buy order with highest priority (price and time priority)
     			let mut max_buy: Order = self.buy_orders.pop().unwrap();
+
+    			let mut m_sell_order = cur_order.clone();
+    			let mut m_buy_order = max_buy.clone();
+    			matched_orders.push((m_buy_order, m_sell_order));    			
+
     			// Determine quantity matched
     			// i.e, Minimum quantity of buy and sell order    			
     			let qty_trade = min(max_buy.get_qty(), cur_order.get_qty());
+
     			// Update the remaining quantity for buy order    			
     			let max_buy_qty = max_buy.get_qty();
     			max_buy.set_qty(max_buy_qty - qty_trade);
@@ -101,6 +115,8 @@ impl MatchingEngine {
     			self.sell_orders.push(cur_order);
     		}
     	}
+
+    	matched_orders
     }
 
     /*
@@ -111,7 +127,6 @@ impl MatchingEngine {
     pub fn print_status(&self) {
     	println!("-------------------------------------------------------------------------------");
     	println!("SUMMARY");
-    	println!();
 
     	println!("{0: <25} | {1: <10} | {2: <10} | {3: <10}", 
         "TransactTime", "buy", "PRICE", "sell");
