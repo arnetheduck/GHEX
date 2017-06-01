@@ -125,18 +125,18 @@ impl MatchingEngine {
     	Buy orders (if any) come after, in ascending order of priority
     */
     pub fn print_status(&self) {
-    	println!("-------------------------------------------------------------------------------");
+		println!("{:*<1$}", "", 80);
     	println!("SUMMARY");
 
-    	println!("{0: <25} | {1: <10} | {2: <10} | {3: <10}", 
+    	println!("{0: ^25}|{1: ^10}|{2: ^10}|{3: ^10}|", 
         "TransactTime", "buy", "PRICE", "sell");
-        println!("-----------------------------------------------------------");
+		println!("{:-<1$}", "", 59);
 
         // List the sell orders
     	let clone_sell_orders = self.sell_orders.clone();
     	let sell_vec = clone_sell_orders.into_sorted_vec();
     	for order in &sell_vec {
-    		println!("{0: <25} | {1: <10} | {2: <10} | {3: <10}", 
+    		println!("{0: ^25}|{1: ^10}|{2: ^10}|{3: ^10}|", 
         	order.get_transact_time(), " ", order.get_price(), order.get_qty());
     	}
 
@@ -147,10 +147,8 @@ impl MatchingEngine {
     	let buy_vec: Vec<Order> = clone_buy_orders.into_sorted_vec();
     	let buy_vec: Vec<Order> = buy_vec.iter().rev().cloned().collect();
     	for order in &buy_vec {
-    		println!("{0: <25} | {1: <10} | {2: <10} | {3: <10}", 
+    		println!("{0: ^25}|{1: ^10}|{2: ^10}|{3: ^10}|", 
         	order.get_transact_time(), order.get_qty(), order.get_price(), " ");
     	}
-
-    	println!("-------------------------------------------------------------------------------");
     }
 }

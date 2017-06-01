@@ -31,16 +31,16 @@ fn insert_new_order(match_eng: &mut matching_engine::MatchingEngine) {
 }
 
 fn print_transactions(orders_matched: Vec<(objects::Order, objects::Order)>) {
-	println!("-------------------------------------------------------------------------------");
+	println!("{:*<1$}", "", 80);
 	println!("TRANSACTIONS");
 
-	println!("{0: ^30} | {1: ^30}", "BUY", "SELL");
-	println!("-----------------------------------------------------------");
+	println!("{0: ^30}|{1: ^30}|", "BUY", "SELL");
+	println!("{:-<1$}", "", 62);
 
 	for (buy_order, sell_order) in orders_matched {
 		let s = "Price = ".to_string() + buy_order.get_price().to_string().as_str() + ", Quantity = " + buy_order.get_qty().to_string().as_str();		
 		let t = "Price = ".to_string() + sell_order.get_price().to_string().as_str() + ", Quantity = " + sell_order.get_qty().to_string().as_str();
-		println!("{0: <30} | {1: <30}", s, t);
+		println!("{0: ^30}|{1: ^30}|", s, t);
 	}
 }
 
@@ -52,6 +52,7 @@ fn main() {
 	let mut match_eng = matching_engine::MatchingEngine::new();
 	
 	loop {
+		println!("{:*<1$}", "", 80);
 		println!("Continue? (y/n) ");
 		let mut continue_cmd = String::new();
 		io::stdin().read_line(&mut continue_cmd);
