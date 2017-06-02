@@ -100,7 +100,7 @@ impl PartialOrd for Order {
         */
         if self.side == '2' {
             // Sell side
-            // Reverse default ordering to obtain min heap
+            // Determine priority of orders
             if other.price.eq(&self.price) {
                 // Consider time priority only if the orders have same price
                 // i.e, Earlier transaction time, higher priority
@@ -112,7 +112,7 @@ impl PartialOrd for Order {
             }
         } else {
             // Buy side
-            // Default ordering to obtain max heap
+            // Determine priority of orders
             if other.price.eq(&self.price) {
                 // Consider time priority only if the orders have same price
                 // i.e, Earlier transaction time, higher priority
@@ -128,23 +128,6 @@ impl PartialOrd for Order {
 
 impl Ord for Order {
     fn cmp(&self, other: &Order) -> Ordering {
-        let ord = self.partial_cmp(other).unwrap();   
-        if self.side == '2' {
-            // Sell side
-            // Reverse default ordering to obtain min heap
-            match ord {
-                Ordering::Greater => Ordering::Less,
-                Ordering::Less => Ordering::Greater,
-                Ordering::Equal => ord,
-            }
-        } else {
-            // Buy side
-            // Default ordering to obtain max heap
-            match ord {
-                Ordering::Greater => Ordering::Greater,
-                Ordering::Less => Ordering::Less,
-                Ordering::Equal => ord,
-            }       
-        }
+        self.partial_cmp(other).unwrap()
     }
 }

@@ -3,8 +3,8 @@ use std::collections::BinaryHeap;
 use objects::Order;
 
 pub struct MatchingEngine {
-    sell_orders: BinaryHeap<Order>, // All sell orders, min heap
-    buy_orders: BinaryHeap<Order>, // All buy orders, max heap    
+    sell_orders: BinaryHeap<Order>, // All sell orders, max heap according to priority
+    buy_orders: BinaryHeap<Order>, // All buy orders, max heap according to priority
 }
 
 impl MatchingEngine {
@@ -27,9 +27,7 @@ impl MatchingEngine {
     	@params
     		order: order to insert
     */
-    pub fn insert(&mut self, order: &Order) -> Vec<(Order, Order)> {
-    	let mut matched_orders: Vec<(Order, Order)> = Vec::new();
-
+    pub fn insert(&mut self, order: &Order) {
     	let mut cur_order = order.clone();
 
     	if cur_order.get_side() == '1' { 
@@ -45,10 +43,6 @@ impl MatchingEngine {
     			// MATCHING HAPPENS
     			// Get sell order with highest priority (price and time priority)
     			let mut min_sell: Order = self.sell_orders.pop().unwrap();
-
-    			let mut m_sell_order = min_sell.clone();
-    			let mut m_buy_order = cur_order.clone();
-    			matched_orders.push((m_buy_order, m_sell_order));
 
     			// Determine quantity matched
     			// i.e, Minimum quantity of buy and sell order
@@ -85,11 +79,7 @@ impl MatchingEngine {
 
     			// MATCHING HAPPENS
     			// Get buy order with highest priority (price and time priority)
-    			let mut max_buy: Order = self.buy_orders.pop().unwrap();
-
-    			let mut m_sell_order = cur_order.clone();
-    			let mut m_buy_order = max_buy.clone();
-    			matched_orders.push((m_buy_order, m_sell_order));    			
+    			let mut max_buy: Order = self.buy_orders.pop().unwrap();		
 
     			// Determine quantity matched
     			// i.e, Minimum quantity of buy and sell order    			
@@ -115,8 +105,6 @@ impl MatchingEngine {
     			self.sell_orders.push(cur_order);
     		}
     	}
-
-    	matched_orders
     }
 
     /*
@@ -128,27 +116,47 @@ impl MatchingEngine {
 		println!("{:*<1$}", "", 80);
     	println!("SUMMARY");
 
-    	println!("{0: ^25}|{1: ^10}|{2: ^10}|{3: ^10}|", 
-        "TransactTime", "buy", "PRICE", "sell");
-		println!("{:-<1$}", "", 59);
+    	println!("| {0: ^40} | {1: ^10} | {2: ^40} |", 
+        "buy", "PRICE", "sell");
+		println!("{:-<1$}", "", 100);
+
+        // List the buy orders
+        let clone_buy_orders = self.buy_orders.clone();
+        let buy_vec: Vec<Order> = clone_buy_orders.into_sorted_vec();
+
+        let mut cur_line = String::new();
+        for (index, order) in buy_vec.iter().enumerate() {
+            if cur_line.len() > 0 {
+                cur_line.push(' ');
+            }
+            cur_line.push_str(order.get_qty().to_string().as_str());
+
+            if index == buy_vec.len() - 1 || buy_vec[index].get_price() != buy_vec[index + 1].get_price() {
+                println!("| {0: >40} | {1: ^10} | {2: <40} |", 
+                cur_line, order.get_price(), "");
+                cur_line = String::new();
+            }
+        }
+
+        println!();
 
         // List the sell orders
     	let clone_sell_orders = self.sell_orders.clone();
     	let sell_vec = clone_sell_orders.into_sorted_vec();
-    	for order in &sell_vec {
-    		println!("{0: ^25}|{1: ^10}|{2: ^10}|{3: ^10}|", 
-        	order.get_transact_time(), " ", order.get_price(), order.get_qty());
-    	}
+        let sell_vec: Vec<Order> = sell_vec.iter().rev().cloned().collect();
 
-    	println!();
+        let mut cur_line = String::new();
+        for (index, order) in sell_vec.iter().enumerate() {
+            if cur_line.len() > 0 {
+                cur_line.push(' ');
+            }
+            cur_line.push_str(order.get_qty().to_string().as_str());
 
-    	// List the buy orders
-    	let clone_buy_orders = self.buy_orders.clone();
-    	let buy_vec: Vec<Order> = clone_buy_orders.into_sorted_vec();
-    	let buy_vec: Vec<Order> = buy_vec.iter().rev().cloned().collect();
-    	for order in &buy_vec {
-    		println!("{0: ^25}|{1: ^10}|{2: ^10}|{3: ^10}|", 
-        	order.get_transact_time(), order.get_qty(), order.get_price(), " ");
-    	}
+            if index == sell_vec.len() - 1 || sell_vec[index].get_price() != sell_vec[index + 1].get_price() {
+                println!("| {0: >40} | {1: ^10} | {2: <40} |", 
+                "", order.get_price(), cur_line);
+                cur_line = String::new();
+            }
+        }
     }
 }
