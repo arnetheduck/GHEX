@@ -1,10 +1,19 @@
+extern crate linked_hash_map;
+
 use std::cmp::min;
 use std::collections::BinaryHeap;
 use objects::Order;
+use std::collections::HashMap;
+use self::linked_hash_map::LinkedHashMap;
 
 pub struct MatchingEngine {
     sell_orders: BinaryHeap<Order>, // All sell orders, max heap according to priority
     buy_orders: BinaryHeap<Order>, // All buy orders, max heap according to priority
+    /* Outer hash map: price -> inner hash map
+       Inner hash map: account id -> Order
+    */
+    sells_by_price: HashMap<i64, LinkedHashMap<String, Order>>,
+    buys_by_price: HashMap<i64, LinkedHashMap<String, Order>>
 }
 
 impl MatchingEngine {
@@ -19,7 +28,45 @@ impl MatchingEngine {
     	MatchingEngine {
             sell_orders: BinaryHeap::new(),
             buy_orders: BinaryHeap::new(),
+            sells_by_price: HashMap::new(),
+            buys_by_price: HashMap::new()
     	}
+    }
+    /*
+        Get all buy orders at a given price
+        @params 
+            price: price being queried
+        @return 
+            Vector of buy orders at a given price
+    */
+    pub fn get_buy_orders(&self, price: &i64) -> Vec<Order> {
+        let buy_orders = self.buys_by_price.get(price);
+        let mut buys_vector: Vec<Order> = Vec::new();
+        if buy_orders != None {
+            for i in (buy_orders.unwrap()).values() {
+                let order_clone = i.clone();
+                buys_vector.push(order_clone);
+            }
+        }
+        buys_vector
+    }
+    /*
+        Get all sell orders at a given price
+        @params 
+            price: price being queried
+        @return 
+            Vector of sell orders at a given price
+    */
+    pub fn get_sell_orders(&self, price: &i64) -> Vec<Order> {
+        let sell_orders = self.sells_by_price.get(price);
+        let mut sells_vector: Vec<Order> = Vec::new();
+        if sell_orders != None {
+            for i in (sell_orders.unwrap()).values() {
+                let order_clone = i.clone();
+                sells_vector.push(order_clone);
+            }
+        }
+        sells_vector
     }
 
     /*
@@ -29,7 +76,7 @@ impl MatchingEngine {
     */
     pub fn insert(&mut self, order: &Order) {
     	let mut cur_order = order.clone();
-
+        let price = cur_order.get_price();
     	if cur_order.get_side() == '1' { 
     		// Buy side
     		// Look at order book and match (if possible)
@@ -67,8 +114,19 @@ impl MatchingEngine {
     		if cur_order.get_qty() > 0 {
     			self.buy_orders.push(cur_order);
     		}
+            let order_clone = order.clone();
+            if self.buys_by_price.contains_key(&price) {
+                (*self.buys_by_price.get_mut(&price).unwrap()).insert(order.get_id(), order_clone);
+            }
+            else {
+                self.buys_by_price.insert(price, LinkedHashMap::new());
+                (*self.buys_by_price.get_mut(&price).unwrap()).insert(order.get_id(), order_clone);
+            }
+            
+
     	} else { 
     		// Sell side
+            
     		// Look at order book and match (if possible)
     		while !self.buy_orders.is_empty() {
     			// Stop matching when price of sell order is higher than all buy orders
@@ -104,6 +162,17 @@ impl MatchingEngine {
     		if cur_order.get_qty() > 0 {
     			self.sell_orders.push(cur_order);
     		}
+
+            // let mut inner: &LinkedHashMap<String, Order> = self.sells_by_price.get(&price).unwrap();
+            // (*inner).insert(order.get_id(), *order);
+            let order_clone = order.clone();
+            if self.sells_by_price.contains_key(&price) {
+                (*self.sells_by_price.get_mut(&price).unwrap()).insert(order.get_id(), order_clone);
+            }
+            else {
+                self.sells_by_price.insert(price, LinkedHashMap::new());
+                (*self.sells_by_price.get_mut(&price).unwrap()).insert(order.get_id(), order_clone);
+            }
     	}
     }
 
