@@ -4,6 +4,7 @@ extern crate time;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Order {
+    id: String,
     order_qty: i64,
     price: i64,
     side: char, // 1 = buy, 2 = sell
@@ -20,20 +21,23 @@ impl Order {
         @return
             New order with quantity, price, side provided and transaction time is the time when order created
     */
-    pub fn new(m_qty: i64, m_price: i64, m_side: char) -> Order { 
+    pub fn new(m_id: String, m_qty: i64, m_price: i64, m_side: char) -> Order { 
         // get current time in UTC format
         let mut cur_time: String = time::now_utc().strftime("%Y%m%d-%H:%M:%S.%f").unwrap().to_string();
         cur_time.truncate(21);
 
         // return a new order
         Order {
+            id: m_id,
             order_qty: m_qty,
             price: m_price,
             side: m_side,
             transact_time: cur_time,
         }
     }
-
+    pub fn get_id(&self) -> String {
+        self.id.clone()
+    }
     // Quantity getter: return quantity of order 
     pub fn get_qty(&self) -> i64 {
         self.order_qty
