@@ -9,8 +9,10 @@ use self::linked_hash_map::LinkedHashMap;
 pub struct MatchingEngine {
     sell_orders: BinaryHeap<Order>, // All sell orders, max heap according to priority
     buy_orders: BinaryHeap<Order>, // All buy orders, max heap according to priority
-    /* Outer hash map: price -> inner hash map
-       Inner hash map: account id -> Order
+    
+    /* 
+        Outer hash map: price -> inner hash map
+        Inner hash map: account id -> Order
     */
     sells_by_price: HashMap<i64, LinkedHashMap<String, Order>>,
     buys_by_price: HashMap<i64, LinkedHashMap<String, Order>>
@@ -32,6 +34,7 @@ impl MatchingEngine {
             buys_by_price: HashMap::new()
     	}
     }
+
     /*
         Get all buy orders at a given price
         @params 
@@ -39,16 +42,15 @@ impl MatchingEngine {
         @return 
             Vector of buy orders at a given price
     */
-    pub fn get_buy_orders(&self, price: &i64) -> Vec<Order> {
+    pub fn get_buy_orders(&self, price: &i64) -> Vec<&Order> {
         // Get all buy orders at a specific price (A Linked Hash Map)
         let buy_orders = self.buys_by_price.get(price);
 
         // Convert Linked Hash Map into a Vector
-        let mut buys_vec: Vec<Order> = Vec::new();
+        let mut buys_vec: Vec<&Order> = Vec::new();
         if buy_orders != None {
-            for order in (buy_orders.unwrap()).values() {
-                let order_clone = order.clone();
-                buys_vec.push(order_clone);
+            for order in buy_orders.unwrap().values() {
+                buys_vec.push(order);
             }
         }
 
@@ -73,6 +75,7 @@ impl MatchingEngine {
         }        
         buys_vec
     }
+
     /*
         Get all sell orders at a given price
         @params 
@@ -80,16 +83,15 @@ impl MatchingEngine {
         @return 
             Vector of sell orders at a given price
     */
-    pub fn get_sell_orders(&self, price: &i64) -> Vec<Order> {
+    pub fn get_sell_orders(&self, price: &i64) -> Vec<&Order> {
         // Get all sell orders at a specific price (A Linked Hash Map)
         let sell_orders = self.sells_by_price.get(price);
 
         // Convert Linked Hash Map into a Vector
-        let mut sells_vec: Vec<Order> = Vec::new();
+        let mut sells_vec: Vec<&Order> = Vec::new();
         if sell_orders != None {
-            for order in (sell_orders.unwrap()).values() {
-                let order_clone = order.clone();
-                sells_vec.push(order_clone);
+            for order in sell_orders.unwrap().values() {
+                sells_vec.push(order);
             }
         }
 

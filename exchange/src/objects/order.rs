@@ -101,9 +101,6 @@ impl Eq for Order {}
 
 impl PartialOrd for Order {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        /* 
-            
-        */
         if self.side == '2' {
             // Sell side
             // Determine priority of orders

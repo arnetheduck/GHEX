@@ -14,7 +14,7 @@ fn get_orders(match_eng: &matching_engine::MatchingEngine) {
 	io::stdin().read_line(&mut m_side);
 	let m_side: char = m_side.chars().nth(0).unwrap();
 
-	let mut orders: Vec<objects::Order>;
+	let mut orders: Vec<&objects::Order>;
 	if m_side == '1' {
 		orders = match_eng.get_buy_orders(&m_price);
 	}
