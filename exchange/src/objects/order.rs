@@ -35,6 +35,8 @@ impl Order {
             transact_time: cur_time,
         }
     }
+
+    // ID getter: return ID of order
     pub fn get_id(&self) -> String {
         self.id.clone()
     }

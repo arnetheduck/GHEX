@@ -40,15 +40,38 @@ impl MatchingEngine {
             Vector of buy orders at a given price
     */
     pub fn get_buy_orders(&self, price: &i64) -> Vec<Order> {
+        // Get all buy orders at a specific price (A Linked Hash Map)
         let buy_orders = self.buys_by_price.get(price);
-        let mut buys_vector: Vec<Order> = Vec::new();
+
+        // Convert Linked Hash Map into a Vector
+        let mut buys_vec: Vec<Order> = Vec::new();
         if buy_orders != None {
-            for i in (buy_orders.unwrap()).values() {
-                let order_clone = i.clone();
-                buys_vector.push(order_clone);
+            for order in (buy_orders.unwrap()).values() {
+                let order_clone = order.clone();
+                buys_vec.push(order_clone);
             }
         }
-        buys_vector
+
+        println!("| {0: ^40} | {1: ^10} | {2: ^40} |", 
+        "buy", "PRICE", "sell");
+        println!("{:-<1$}", "", 100);
+
+        // List the buy orders
+        buys_vec.reverse();
+        let mut cur_line = String::new();
+        for (index, order) in buys_vec.iter().enumerate() {
+            if cur_line.len() > 0 {
+                cur_line.push(' ');
+            }
+            cur_line.push_str(order.get_qty().to_string().as_str());
+
+            if index == buys_vec.len() - 1 || buys_vec[index].get_price() != buys_vec[index + 1].get_price() {
+                println!("| {0: >40} | {1: ^10} | {2: <40} |", 
+                cur_line, order.get_price(), "");
+                cur_line = String::new();
+            }
+        }        
+        buys_vec
     }
     /*
         Get all sell orders at a given price
@@ -58,15 +81,37 @@ impl MatchingEngine {
             Vector of sell orders at a given price
     */
     pub fn get_sell_orders(&self, price: &i64) -> Vec<Order> {
+        // Get all sell orders at a specific price (A Linked Hash Map)
         let sell_orders = self.sells_by_price.get(price);
-        let mut sells_vector: Vec<Order> = Vec::new();
+
+        // Convert Linked Hash Map into a Vector
+        let mut sells_vec: Vec<Order> = Vec::new();
         if sell_orders != None {
-            for i in (sell_orders.unwrap()).values() {
-                let order_clone = i.clone();
-                sells_vector.push(order_clone);
+            for order in (sell_orders.unwrap()).values() {
+                let order_clone = order.clone();
+                sells_vec.push(order_clone);
             }
         }
-        sells_vector
+
+        println!("| {0: ^40} | {1: ^10} | {2: ^40} |", 
+        "buy", "PRICE", "sell");
+        println!("{:-<1$}", "", 100);
+
+        // List the buy orders
+        let mut cur_line = String::new();
+        for (index, order) in sells_vec.iter().enumerate() {
+            if cur_line.len() > 0 {
+                cur_line.push(' ');
+            }
+            cur_line.push_str(order.get_qty().to_string().as_str());
+
+            if index == sells_vec.len() - 1 || sells_vec[index].get_price() != sells_vec[index + 1].get_price() {
+                println!("| {0: >40} | {1: ^10} | {2: <40} |", 
+                "", order.get_price(), cur_line);
+                cur_line = String::new();
+            }
+        }  
+        sells_vec
     }
 
     /*
@@ -105,25 +150,25 @@ impl MatchingEngine {
     			// If remaining quantity of sell order is non-zero
     			// push sell order back onto order book
     			if min_sell.get_qty() > 0 {
-    				self.sell_orders.push(min_sell);
-    			}
+                    (*self.sells_by_price.get_mut(&min_sell.get_price()).unwrap()).get_mut(&min_sell.get_id()).unwrap().set_qty(min_sell.get_qty());
+                    self.sell_orders.push(min_sell);
+                }
+    			else {
+                    (*self.sells_by_price.get_mut(&min_sell.get_price()).unwrap()).remove(&min_sell.get_id());
+                }
     		}
     		
     		// If remaining quantity of buy order is non-zero
     		// push buy order onto order book
     		if cur_order.get_qty() > 0 {
+                let order_clone = cur_order.clone();
     			self.buy_orders.push(cur_order);
-    		}
-            let order_clone = order.clone();
-            if self.buys_by_price.contains_key(&price) {
-                (*self.buys_by_price.get_mut(&price).unwrap()).insert(order.get_id(), order_clone);
-            }
-            else {
-                self.buys_by_price.insert(price, LinkedHashMap::new());
-                (*self.buys_by_price.get_mut(&price).unwrap()).insert(order.get_id(), order_clone);
-            }
-            
 
+                if !self.buys_by_price.contains_key(&price) {
+                    self.buys_by_price.insert(price, LinkedHashMap::new());
+                }
+                (*self.buys_by_price.get_mut(&price).unwrap()).insert(order.get_id(), order_clone);
+    		}
     	} else { 
     		// Sell side
             
@@ -153,26 +198,24 @@ impl MatchingEngine {
     			// If remaining quantity of buy order is non-zero
     			// push buy order back onto order book
     			if max_buy.get_qty() > 0 {
+                    (*self.buys_by_price.get_mut(&max_buy.get_price()).unwrap()).get_mut(&max_buy.get_id()).unwrap().set_qty(max_buy.get_qty());                    
     				self.buy_orders.push(max_buy);
-    			}
+    			} else {
+                    (*self.buys_by_price.get_mut(&max_buy.get_price()).unwrap()).remove(&max_buy.get_id());
+                }
     		}
 
     		// If remaining quantity of sell order is non-zero
     		// push sell order onto order book    		
     		if cur_order.get_qty() > 0 {
+                let order_clone = cur_order.clone();                
     			self.sell_orders.push(cur_order);
-    		}
 
-            // let mut inner: &LinkedHashMap<String, Order> = self.sells_by_price.get(&price).unwrap();
-            // (*inner).insert(order.get_id(), *order);
-            let order_clone = order.clone();
-            if self.sells_by_price.contains_key(&price) {
+                if !self.sells_by_price.contains_key(&price) {
+                    self.sells_by_price.insert(price, LinkedHashMap::new());
+                }
                 (*self.sells_by_price.get_mut(&price).unwrap()).insert(order.get_id(), order_clone);
-            }
-            else {
-                self.sells_by_price.insert(price, LinkedHashMap::new());
-                (*self.sells_by_price.get_mut(&price).unwrap()).insert(order.get_id(), order_clone);
-            }
+    		}
     	}
     }
 

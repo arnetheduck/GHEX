@@ -2,8 +2,8 @@ use std::io;
 
 mod objects;
 mod matching_engine;
+
 fn get_orders(match_eng: &matching_engine::MatchingEngine) {
-	let mut orders = Vec::new();
 	println!("Enter price: ");
 	let mut m_price = String::new();
 	io::stdin().read_line(&mut m_price);
@@ -13,22 +13,16 @@ fn get_orders(match_eng: &matching_engine::MatchingEngine) {
 	let mut m_side = String::new();
 	io::stdin().read_line(&mut m_side);
 	let m_side: char = m_side.chars().nth(0).unwrap();
+
+	let mut orders: Vec<objects::Order>;
 	if m_side == '1' {
 		orders = match_eng.get_buy_orders(&m_price);
 	}
 	else {
 		orders = match_eng.get_sell_orders(&m_price);	
 	}
-	if !orders.is_empty() {
-		for i in orders {
-			println!("{:?}", i);
-		}
-	}
-	else {
-		println!("No orders");
-	}
-	
 }
+
 fn insert_new_order(match_eng: &mut matching_engine::MatchingEngine) {
 	// Ask user to input new order
 	println!("Insert new order: ");
@@ -36,6 +30,7 @@ fn insert_new_order(match_eng: &mut matching_engine::MatchingEngine) {
 	println!("Enter account id: ");
 	let mut m_id = String::new();
 	io::stdin().read_line(&mut m_id);
+	let m_id: String = m_id.trim().to_string();
 
 	println!("Side: (1 = buy, 2 = sell)");
 	let mut m_side = String::new();
