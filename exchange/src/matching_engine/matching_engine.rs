@@ -72,7 +72,8 @@ impl MatchingEngine {
                 cur_line, order.get_price(), "");
                 cur_line = String::new();
             }
-        }        
+        }
+        buys_vec.reverse();        
         buys_vec
     }
 
