@@ -26,6 +26,7 @@ fn insert_new_order(match_eng: &mut matching_engine::MatchingEngine) {
 	// println!("{}", m_qty);		
 
 	match_eng.insert(&objects::Order::new(m_qty, m_price, m_side));
+	match_eng.print_status();
 }
 
 fn main() {

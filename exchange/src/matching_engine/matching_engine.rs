@@ -71,12 +71,17 @@ impl MatchingEngine {
                     // Delete sell order (if fully matched)
                     if min_sell.get_qty() == 0 {
                         best_price_orders.pop_front();
+                    } else {
+                        best_price_orders.get_mut(&key).unwrap().set_qty(min_sell.get_qty());
                     }
                 }
             }
             // If remaining quantity of buy order is non-zero
             // push buy order onto order book
             if cur_order.get_qty() > 0 {
+                if !self.buys_by_price.contains_key(&cur_order.get_price()) {
+                    self.buys_by_price.insert(cur_order.get_price(), LinkedHashMap::new());
+                }
                 let orders_list: &mut LinkedHashMap<String, Order> = self.buys_by_price.get_mut(&cur_order.get_price()).unwrap();
                 cur_order.set_id(&self.id_count.to_string());
                 self.id_count += 1;
@@ -120,12 +125,17 @@ impl MatchingEngine {
                     // Delete buy order (if fully matched)
                     if max_buy.get_qty() == 0 {
                         best_price_orders.pop_front();
+                    } else {
+                        best_price_orders.get_mut(&key).unwrap().set_qty(max_buy.get_qty());
                     }
                 }
             }
             // If remaining quantity of sell order is non-zero
             // push sell order onto order book
             if cur_order.get_qty() > 0 {
+                if !self.sells_by_price.contains_key(&cur_order.get_price()) {
+                    self.sells_by_price.insert(cur_order.get_price(), LinkedHashMap::new());
+                }
                 let orders_list: &mut LinkedHashMap<String, Order> = self.sells_by_price.get_mut(&cur_order.get_price()).unwrap();
                 cur_order.set_id(&self.id_count.to_string());
                 self.id_count += 1;
@@ -133,4 +143,56 @@ impl MatchingEngine {
             }
         }
     }  
+
+    pub fn print_status(&self) {
+        println!("{:*<1$}", "", 80);
+        println!("SUMMARY");
+
+        println!("| {0: ^40} | {1: ^10} | {2: ^40} |", 
+        "buy", "PRICE", "sell");
+        println!("{:-<1$}", "", 100);
+
+        // List the buy orders
+        for price in self.buys_by_price.keys(){
+            let mut buy_vec = Vec::new();
+            let buy_orders: & LinkedHashMap<String, Order> = self.buys_by_price.get(price).unwrap();
+            for order in buy_orders.values() {
+                buy_vec.push(order.clone());
+            }
+            buy_vec.reverse();
+
+            let mut cur_line = String::new();
+            for (index, order) in buy_vec.iter().enumerate() {
+                if index > 0 {
+                    cur_line.push(' ');
+                }
+                cur_line.push_str(order.get_qty().to_string().as_str());
+            }
+
+            println!("| {0: >40} | {1: ^10} | {2: <40} |", 
+            cur_line, price, "");
+        }
+
+        println!();
+
+        // List the sell orders
+        for price in self.sells_by_price.keys(){
+            let mut sell_vec = Vec::new();
+            let sell_orders: & LinkedHashMap<String, Order> = self.sells_by_price.get(price).unwrap();
+            for order in sell_orders.values() {
+                sell_vec.push(order.clone());
+            }
+
+            let mut cur_line = String::new();
+            for (index, order) in sell_vec.iter().enumerate() {
+                if index > 0 {
+                    cur_line.push(' ');
+                }
+                cur_line.push_str(order.get_qty().to_string().as_str());
+            }
+
+            println!("| {0: >40} | {1: ^10} | {2: <40} |", 
+            "", price, cur_line);
+        }        
+    }
 }
