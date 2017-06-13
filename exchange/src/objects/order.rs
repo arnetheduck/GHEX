@@ -21,14 +21,14 @@ impl Order {
         @return
             New order with quantity, price, side provided and transaction time is the time when order created
     */
-    pub fn new(m_id: String, m_qty: i64, m_price: i64, m_side: char) -> Order { 
+    pub fn new(m_qty: i64, m_price: i64, m_side: char) -> Order { 
         // get current time in UTC format
         let mut cur_time: String = time::now_utc().strftime("%Y%m%d-%H:%M:%S.%f").unwrap().to_string();
         cur_time.truncate(21);
 
         // return a new order
         Order {
-            id: m_id,
+        	id: "-1".to_string(),
             order_qty: m_qty,
             price: m_price,
             side: m_side,
@@ -59,6 +59,10 @@ impl Order {
     pub fn get_transact_time(&self) -> String {
         self.transact_time.clone()
     }
+
+	pub fn set_id(&mut self, m_id: &String) {
+        self.id = m_id.clone();
+    }    
 
     /* 
         Quantity setter: set new quantity for order
