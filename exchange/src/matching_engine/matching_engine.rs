@@ -30,7 +30,22 @@ impl MatchingEngine {
             id_count: 0
     	}
     }
+  
+    pub fn delete(&mut self, ord_id: &String) {
+        for (k,i) in self.sells_by_price.clone() {
+            if i.contains_key(ord_id) {
+                self.sells_by_price.get_mut(&k).unwrap().remove(ord_id);
+                ()
+            }
+        }
+        for (k,i) in self.buys_by_price.clone() {
+            if i.contains_key(ord_id) {
+                self.buys_by_price.get_mut(&k).unwrap().remove(ord_id);
+                ()
+            }
+        }
 
+    }
     pub fn insert(&mut self, order: &Order) {
         let mut cur_order = order.clone();
         if cur_order.get_side() == '1' {
