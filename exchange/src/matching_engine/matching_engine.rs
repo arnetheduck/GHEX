@@ -48,32 +48,37 @@ impl MatchingEngine {
                     break;
                 }
                 // Get all sell orders at lowest price
-                let best_price_orders: &mut LinkedHashMap<String, Order> = self.sells_by_price.get_mut(&best_sell_price).unwrap();
-                while !best_price_orders.is_empty() && cur_order.get_qty() > 0 {
-                    let mut key: String;
-                    let mut sell_order: Order;
-                    // Get key and order object of the first order in Hash Map
-                    {
-                        let (m_key, m_sell_order) = best_price_orders.front().unwrap();
-                        key = m_key.clone();
-                        sell_order = m_sell_order.clone();
+                {
+                    let best_price_orders: &mut LinkedHashMap<String, Order> = self.sells_by_price.get_mut(&best_sell_price).unwrap();
+                    while !best_price_orders.is_empty() && cur_order.get_qty() > 0 {
+                        let key: String;
+                        let sell_order: Order;
+                        // Get key and order object of the first order in Hash Map
+                        {
+                            let (m_key, m_sell_order) = best_price_orders.front().unwrap();
+                            key = m_key.clone();
+                            sell_order = m_sell_order.clone();
+                        }
+                        let mut min_sell = sell_order.clone();
+                        // Determine quantity matched
+                        // i.e, Minimum quantity of buy and sell order
+                        let qty_trade = cmp::min(min_sell.get_qty(), cur_order.get_qty());
+                        // Update the remaining quantity for sell order
+                        let min_sell_qty = min_sell.get_qty();
+                        min_sell.set_qty(min_sell_qty - qty_trade);
+                        // Update the remaining quantity for buy order (new order inserted)
+                        let cur_order_qty = cur_order.get_qty();
+                        cur_order.set_qty(cur_order_qty - qty_trade);
+                        // Delete sell order (if fully matched)
+                        if min_sell.get_qty() == 0 {
+                            best_price_orders.pop_front();
+                        } else {
+                            best_price_orders.get_mut(&key).unwrap().set_qty(min_sell.get_qty());
+                        }
                     }
-                    let mut min_sell = sell_order.clone();
-                    // Determine quantity matched
-                    // i.e, Minimum quantity of buy and sell order
-                    let qty_trade = cmp::min(min_sell.get_qty(), cur_order.get_qty());
-                    // Update the remaining quantity for sell order
-                    let min_sell_qty = min_sell.get_qty();
-                    min_sell.set_qty(min_sell_qty - qty_trade);
-                    // Update the remaining quantity for buy order (new order inserted)
-                    let cur_order_qty = cur_order.get_qty();
-                    cur_order.set_qty(cur_order_qty - qty_trade);
-                    // Delete sell order (if fully matched)
-                    if min_sell.get_qty() == 0 {
-                        best_price_orders.pop_front();
-                    } else {
-                        best_price_orders.get_mut(&key).unwrap().set_qty(min_sell.get_qty());
-                    }
+                }
+                if self.sells_by_price.get(&best_sell_price).unwrap().is_empty() {
+                    self.sells_by_price.remove(&best_sell_price);
                 }
             }
             // If remaining quantity of buy order is non-zero
@@ -102,32 +107,37 @@ impl MatchingEngine {
                     break;
                 }
                 // Get all buy orders at highest price
-                let best_price_orders: &mut LinkedHashMap<String, Order> = self.buys_by_price.get_mut(&best_buy_price).unwrap();
-                while !best_price_orders.is_empty() && cur_order.get_qty() > 0 {
-                    let mut key: String;
-                    let mut buy_order: Order;
-                    // Get key and order object of the first order in Hash Map
-                    {
-                        let (m_key, m_buy_order) = best_price_orders.front().unwrap();
-                        key = m_key.clone();
-                        buy_order = m_buy_order.clone();
+                {
+                    let best_price_orders: &mut LinkedHashMap<String, Order> = self.buys_by_price.get_mut(&best_buy_price).unwrap();
+                    while !best_price_orders.is_empty() && cur_order.get_qty() > 0 {
+                        let key: String;
+                        let buy_order: Order;
+                        // Get key and order object of the first order in Hash Map
+                        {
+                            let (m_key, m_buy_order) = best_price_orders.front().unwrap();
+                            key = m_key.clone();
+                            buy_order = m_buy_order.clone();
+                        }
+                        let mut max_buy = buy_order.clone();
+                        // Determine quantity matched
+                        // i.e, Minimum quantity of buy and sell order
+                        let qty_trade = cmp::min(max_buy.get_qty(), cur_order.get_qty());
+                        // Update the remaining quantity for buy order
+                        let max_buy_qty = max_buy.get_qty();
+                        max_buy.set_qty(max_buy_qty - qty_trade);
+                        // Update the remaining quantity for sell order (new order inserted)
+                        let cur_order_qty = cur_order.get_qty();
+                        cur_order.set_qty(cur_order_qty - qty_trade);
+                        // Delete buy order (if fully matched)
+                        if max_buy.get_qty() == 0 {
+                            best_price_orders.pop_front();
+                        } else {
+                            best_price_orders.get_mut(&key).unwrap().set_qty(max_buy.get_qty());
+                        }
                     }
-                    let mut max_buy = buy_order.clone();
-                    // Determine quantity matched
-                    // i.e, Minimum quantity of buy and sell order
-                    let qty_trade = cmp::min(max_buy.get_qty(), cur_order.get_qty());
-                    // Update the remaining quantity for buy order
-                    let max_buy_qty = max_buy.get_qty();
-                    max_buy.set_qty(max_buy_qty - qty_trade);
-                    // Update the remaining quantity for sell order (new order inserted)
-                    let cur_order_qty = cur_order.get_qty();
-                    cur_order.set_qty(cur_order_qty - qty_trade);
-                    // Delete buy order (if fully matched)
-                    if max_buy.get_qty() == 0 {
-                        best_price_orders.pop_front();
-                    } else {
-                        best_price_orders.get_mut(&key).unwrap().set_qty(max_buy.get_qty());
-                    }
+                }
+                if self.buys_by_price.get(&best_buy_price).unwrap().is_empty() {
+                    self.buys_by_price.remove(&best_buy_price);
                 }
             }
             // If remaining quantity of sell order is non-zero
@@ -152,10 +162,24 @@ impl MatchingEngine {
         "buy", "PRICE", "sell");
         println!("{:-<1$}", "", 100);
 
-        // List the buy orders
-        for price in self.buys_by_price.keys(){
+        // List the buy orders (in ascending order of price)
+        let mut last_price = -i64::max_value();
+        while true {
+            let mut cur_price = i64::max_value();
+            for price in self.buys_by_price.keys(){
+                if *price > last_price {
+                    cur_price = cmp::min(cur_price, *price);
+                }
+            }
+
+            if cur_price == i64::max_value() {
+                break;
+            }
+
+            last_price = cur_price;
+
             let mut buy_vec = Vec::new();
-            let buy_orders: & LinkedHashMap<String, Order> = self.buys_by_price.get(price).unwrap();
+            let buy_orders: & LinkedHashMap<String, Order> = self.buys_by_price.get(&cur_price).unwrap();
             for order in buy_orders.values() {
                 buy_vec.push(order.clone());
             }
@@ -170,15 +194,29 @@ impl MatchingEngine {
             }
 
             println!("| {0: >40} | {1: ^10} | {2: <40} |", 
-            cur_line, price, "");
+            cur_line, cur_price, "");
         }
 
         println!();
 
-        // List the sell orders
-        for price in self.sells_by_price.keys(){
+        // List the sell orders (in ascending order of price)
+        let mut last_price = -i64::max_value();
+        while true {
+            let mut cur_price = i64::max_value();
+            for price in self.sells_by_price.keys(){
+                if *price > last_price {
+                    cur_price = cmp::min(cur_price, *price);
+                }
+            }
+
+            if cur_price == i64::max_value() {
+                break;
+            }
+
+            last_price = cur_price;
+
             let mut sell_vec = Vec::new();
-            let sell_orders: & LinkedHashMap<String, Order> = self.sells_by_price.get(price).unwrap();
+            let sell_orders: & LinkedHashMap<String, Order> = self.sells_by_price.get(&cur_price).unwrap();
             for order in sell_orders.values() {
                 sell_vec.push(order.clone());
             }
@@ -192,7 +230,7 @@ impl MatchingEngine {
             }
 
             println!("| {0: >40} | {1: ^10} | {2: <40} |", 
-            "", price, cur_line);
+            "", cur_price, cur_line);
         }        
     }
 }
