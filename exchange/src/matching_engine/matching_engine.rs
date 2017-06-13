@@ -154,6 +154,22 @@ impl MatchingEngine {
         }
     }  
 
+    pub fn delete(&mut self, ord_id: &String) {
+        for (key, inner_hashmap) in self.sells_by_price.clone() {
+            if inner_hashmap.contains_key(ord_id) {
+                self.sells_by_price.get_mut(&key).unwrap().remove(ord_id);
+                ()
+            }
+        }
+        for (key, inner_hashmap) in self.buys_by_price.clone() {
+            if inner_hashmap.contains_key(ord_id) {
+                self.buys_by_price.get_mut(&key).unwrap().remove(ord_id);
+                ()
+            }
+        }
+
+    }    
+
     pub fn print_status(&self) {
         println!("{:*<1$}", "", 80);
         println!("SUMMARY");
