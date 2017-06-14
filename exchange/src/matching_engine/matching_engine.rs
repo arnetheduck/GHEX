@@ -175,6 +175,44 @@ impl MatchingEngine {
         }
     }    
 
+    pub fn update(&mut self, ord_id: &String, order: &Order) {
+        // compare updated order object with existing order
+        let sells_clone = self.sells_by_price.clone();
+        for (key, inner_hashmap) in self.sells_by_price.clone() {
+            if inner_hashmap.contains_key(ord_id) {
+                let existing_ord = sells_clone.get(&key).unwrap().get(ord_id);
+                if order.get_price() > existing_ord.unwrap().get_price() {
+                    // remove existing order and push new order object onto hashmap
+                    self.sells_by_price.get_mut(&key).unwrap().remove(ord_id);
+                    self.sells_by_price.get_mut(&key).unwrap().insert(ord_id.clone(), order.clone());
+                }
+                else {
+                    // just update quantity of existing order
+                    self.sells_by_price.get_mut(&key).unwrap().get_mut(ord_id).unwrap().set_qty(order.get_qty());
+                }
+                ()
+            }
+        }
+        
+        let buys_clone = self.buys_by_price.clone();
+        for (key, inner_hashmap) in self.buys_by_price.clone() {
+            if inner_hashmap.contains_key(ord_id) {
+                let existing_ord = buys_clone.get(&key).unwrap().get(ord_id);
+                if order.get_price() > existing_ord.unwrap().get_price() {
+                    // remove existing order and push new order object onto hashmap
+                    self.buys_by_price.get_mut(&key).unwrap().remove(ord_id);
+                    self.buys_by_price.get_mut(&key).unwrap().insert(ord_id.clone(), order.clone());
+                }
+                else {
+                    // just update quantity of existing order
+                    self.buys_by_price.get_mut(&key).unwrap().get_mut(ord_id).unwrap().set_qty(order.get_qty());
+                }
+                ()
+            }
+        }
+        
+
+    }
     pub fn print_status(&self) {
         println!("{:*<1$}", "", 80);
         println!("SUMMARY");
