@@ -33,6 +33,12 @@ impl MatchingEngine {
 
     pub fn insert(&mut self, order: &Order) {
         let mut cur_order = order.clone();
+        if cur_order.get_id() == "-1".to_string() {
+            // New order
+            cur_order.set_id(&self.id_count.to_string());
+            self.id_count += 1;
+        }
+
         if cur_order.get_side() == '1' {
             // Buy side
             // Look at order book and match (if possible)
@@ -88,11 +94,9 @@ impl MatchingEngine {
                     self.buys_by_price.insert(cur_order.get_price(), LinkedHashMap::new());
                 }
                 let orders_list: &mut LinkedHashMap<String, Order> = self.buys_by_price.get_mut(&cur_order.get_price()).unwrap();
-                cur_order.set_id(&self.id_count.to_string());
-                self.id_count += 1;
                 orders_list.insert(cur_order.get_id(), cur_order);
             }
-        } else {
+        } else if cur_order.get_side() == '2' {
             // Sell side
             // Look at order book and match (if possible)
             while !self.buys_by_price.is_empty() && cur_order.get_qty() > 0 {
@@ -147,72 +151,79 @@ impl MatchingEngine {
                     self.sells_by_price.insert(cur_order.get_price(), LinkedHashMap::new());
                 }
                 let orders_list: &mut LinkedHashMap<String, Order> = self.sells_by_price.get_mut(&cur_order.get_price()).unwrap();
-                cur_order.set_id(&self.id_count.to_string());
-                self.id_count += 1;
                 orders_list.insert(cur_order.get_id(), cur_order);
             }
         }
     }  
 
     pub fn delete(&mut self, ord_id: &String) {
-        for (key, inner_hashmap) in self.sells_by_price.clone() {
-            if inner_hashmap.contains_key(ord_id) {
-                self.sells_by_price.get_mut(&key).unwrap().remove(ord_id);
-                if self.sells_by_price.get(&key).unwrap().is_empty() {
-                    self.sells_by_price.remove(&key);
-                }
-                ()
+        let existing_ord: Order = self.find_order_by_id(&ord_id);
+
+        if existing_ord.get_side() == '*' {
+            ()
+        } else if existing_ord.get_side() == '1' {
+            // Buy side
+            self.buys_by_price.get_mut(&existing_ord.get_price()).unwrap().remove(ord_id);
+            if self.buys_by_price.get(&existing_ord.get_price()).unwrap().is_empty() {
+                self.buys_by_price.remove(&existing_ord.get_price());
             }
-        }
-        for (key, inner_hashmap) in self.buys_by_price.clone() {
-            if inner_hashmap.contains_key(ord_id) {
-                self.buys_by_price.get_mut(&key).unwrap().remove(ord_id);
-                if self.buys_by_price.get(&key).unwrap().is_empty() {
-                    self.buys_by_price.remove(&key);
-                }
-                ()
+        } else if existing_ord.get_side() == '2' {
+            // Sell side
+            self.sells_by_price.get_mut(&existing_ord.get_price()).unwrap().remove(ord_id);
+            if self.sells_by_price.get(&existing_ord.get_price()).unwrap().is_empty() {
+                self.sells_by_price.remove(&existing_ord.get_price());
             }
         }
     }    
 
     pub fn update(&mut self, ord_id: &String, order: &Order) {
-        // compare updated order object with existing order
-        let sells_clone = self.sells_by_price.clone();
+        // Find existing order by order ID
+        let existing_ord: Order = self.find_order_by_id(&ord_id);
+        // Order not found, exit
+        if existing_ord.get_side() == '*' {
+            ()
+        }
+        // Compare updated order object with existing order
+        if order.get_price() == existing_ord.get_price() {
+            if existing_ord.get_side() == '1' {
+                // Buy side
+                if order.get_qty() > existing_ord.get_qty() {
+                    self.buys_by_price.get_mut(&existing_ord.get_price()).unwrap().remove(ord_id);
+                    self.buys_by_price.get_mut(&existing_ord.get_price()).unwrap().insert(ord_id.clone(), order.clone());
+                } else {
+                    self.buys_by_price.get_mut(&existing_ord.get_price()).unwrap().get_mut(ord_id).unwrap().set_qty(order.get_qty());
+                }
+            } else if existing_ord.get_side() == '2' {
+                // Sell side
+                if order.get_qty() > existing_ord.get_qty() {
+                    self.sells_by_price.get_mut(&existing_ord.get_price()).unwrap().remove(ord_id);
+                    self.sells_by_price.get_mut(&existing_ord.get_price()).unwrap().insert(ord_id.clone(), order.clone());
+                } else {
+                    self.sells_by_price.get_mut(&existing_ord.get_price()).unwrap().get_mut(ord_id).unwrap().set_qty(order.get_qty());   
+                }
+            }
+        } else {
+            self.delete(ord_id);
+            self.insert(order);
+        }
+    }
+
+    fn find_order_by_id(&self, ord_id: &String) -> Order {
         for (key, inner_hashmap) in self.sells_by_price.clone() {
             if inner_hashmap.contains_key(ord_id) {
-                let existing_ord = sells_clone.get(&key).unwrap().get(ord_id);
-                if order.get_price() > existing_ord.unwrap().get_price() {
-                    // remove existing order and push new order object onto hashmap
-                    self.sells_by_price.get_mut(&key).unwrap().remove(ord_id);
-                    self.sells_by_price.get_mut(&key).unwrap().insert(ord_id.clone(), order.clone());
-                }
-                else {
-                    // just update quantity of existing order
-                    self.sells_by_price.get_mut(&key).unwrap().get_mut(ord_id).unwrap().set_qty(order.get_qty());
-                }
-                ()
+                return inner_hashmap.get(ord_id).unwrap().clone();
             }
         }
-        
-        let buys_clone = self.buys_by_price.clone();
         for (key, inner_hashmap) in self.buys_by_price.clone() {
             if inner_hashmap.contains_key(ord_id) {
-                let existing_ord = buys_clone.get(&key).unwrap().get(ord_id);
-                if order.get_price() > existing_ord.unwrap().get_price() {
-                    // remove existing order and push new order object onto hashmap
-                    self.buys_by_price.get_mut(&key).unwrap().remove(ord_id);
-                    self.buys_by_price.get_mut(&key).unwrap().insert(ord_id.clone(), order.clone());
-                }
-                else {
-                    // just update quantity of existing order
-                    self.buys_by_price.get_mut(&key).unwrap().get_mut(ord_id).unwrap().set_qty(order.get_qty());
-                }
-                ()
+                return inner_hashmap.get(ord_id).unwrap().clone();
             }
         }
-        
 
+        // If not found, return DUMMY order
+        Order::new(-1, -1, '*')
     }
+
     pub fn print_status(&self) {
         println!("{:*<1$}", "", 80);
         println!("SUMMARY");
