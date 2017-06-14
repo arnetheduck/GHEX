@@ -26,7 +26,16 @@ fn insert_new_order(match_eng: &mut matching_engine::MatchingEngine) {
 	// println!("{}", m_qty);		
 
 	match_eng.insert(&objects::Order::new(m_qty, m_price, m_side));
-	match_eng.print_status();
+}
+
+fn delete_existing_order(match_eng: &mut matching_engine::MatchingEngine) {
+	// Ask user to input order order_id
+	println!("Enter order ID:");
+	let mut m_id = String::new();
+	io::stdin().read_line(&mut m_id);
+	let m_id = m_id.trim().to_string();
+
+	match_eng.delete(&m_id);
 }
 
 fn main() {
@@ -49,17 +58,21 @@ fn main() {
 
 		println!("OPTIONS:");
 		println!("1. Insert new order");
-		println!("Enter 1 option (1)");
+		println!("2. Delte existing order");
+		println!("Enter 1 option (1 or 2)");
 
 		let mut option_cmd = String::new();
 		io::stdin().read_line(&mut option_cmd);
 
 		match &option_cmd.trim() as &str {
 			"1" => insert_new_order(&mut match_eng),
+			"2" => delete_existing_order(&mut match_eng),
 			_	=> {
 				println!("Invalid option!");
 				continue;
 			}
 		}
+
+		match_eng.print_status();
 	}
 }
