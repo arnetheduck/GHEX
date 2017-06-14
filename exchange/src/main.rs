@@ -58,7 +58,7 @@ fn main() {
 
 		println!("OPTIONS:");
 		println!("1. Insert new order");
-		println!("2. Delte existing order");
+		println!("2. Delete existing order");
 		println!("Enter 1 option (1 or 2)");
 
 		let mut option_cmd = String::new();
