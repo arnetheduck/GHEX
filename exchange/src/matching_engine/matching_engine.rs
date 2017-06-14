@@ -211,7 +211,7 @@ impl MatchingEngine {
                 if index > 0 {
                     cur_line.push(' ');
                 }
-                cur_line.push_str(order.get_qty().to_string().as_str());
+                cur_line.push_str((order.get_qty().to_string() + "(ID: " + order.get_id().as_str() + ")").as_str());
             }
 
             println!("| {0: >40} | {1: ^10} | {2: <40} |", 
@@ -247,7 +247,7 @@ impl MatchingEngine {
                 if index > 0 {
                     cur_line.push(' ');
                 }
-                cur_line.push_str(order.get_qty().to_string().as_str());
+                cur_line.push_str((order.get_qty().to_string() + "(ID: " + order.get_id().as_str() + ")").as_str());
             }
 
             println!("| {0: >40} | {1: ^10} | {2: <40} |", 
