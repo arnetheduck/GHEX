@@ -45,12 +45,6 @@ fn update_existing_order(match_eng: &mut matching_engine::MatchingEngine) {
 	io::stdin().read_line(&mut m_id);
 	let m_id = m_id.trim().to_string();
 
-	println!("Side: (1 = buy, 2 = sell)");
-	let mut m_side = String::new();
-	io::stdin().read_line(&mut m_side);
-	let m_side: char = m_side.chars().nth(0).unwrap();
-	// println!("{}", m_side);
-
 	println!("Price: ");
 	let mut m_price = String::new();
 	io::stdin().read_line(&mut m_price);
@@ -63,7 +57,7 @@ fn update_existing_order(match_eng: &mut matching_engine::MatchingEngine) {
 	let m_qty = m_qty.trim().parse::<i64>().unwrap();
 	// println!("{}", m_qty);		
 
-	let mut new_order = objects::Order::new(m_qty, m_price, m_side);
+	let mut new_order = objects::Order::new(m_qty, m_price, '*');
 	new_order.set_id(&m_id);
 	match_eng.update(&m_id, &new_order);
 }

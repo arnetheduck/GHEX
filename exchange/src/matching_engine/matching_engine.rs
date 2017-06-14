@@ -183,13 +183,15 @@ impl MatchingEngine {
         if existing_ord.get_side() == '*' {
             ()
         }
+        let mut order_clone = order.clone();
+        order_clone.set_side(existing_ord.get_side());        
         // Compare updated order object with existing order
         if order.get_price() == existing_ord.get_price() {
             if existing_ord.get_side() == '1' {
                 // Buy side
                 if order.get_qty() > existing_ord.get_qty() {
                     self.buys_by_price.get_mut(&existing_ord.get_price()).unwrap().remove(ord_id);
-                    self.buys_by_price.get_mut(&existing_ord.get_price()).unwrap().insert(ord_id.clone(), order.clone());
+                    self.buys_by_price.get_mut(&existing_ord.get_price()).unwrap().insert(ord_id.clone(), order_clone);
                 } else {
                     self.buys_by_price.get_mut(&existing_ord.get_price()).unwrap().get_mut(ord_id).unwrap().set_qty(order.get_qty());
                 }
@@ -197,7 +199,7 @@ impl MatchingEngine {
                 // Sell side
                 if order.get_qty() > existing_ord.get_qty() {
                     self.sells_by_price.get_mut(&existing_ord.get_price()).unwrap().remove(ord_id);
-                    self.sells_by_price.get_mut(&existing_ord.get_price()).unwrap().insert(ord_id.clone(), order.clone());
+                    self.sells_by_price.get_mut(&existing_ord.get_price()).unwrap().insert(ord_id.clone(), order_clone);
                 } else {
                     self.sells_by_price.get_mut(&existing_ord.get_price()).unwrap().get_mut(ord_id).unwrap().set_qty(order.get_qty());   
                 }
