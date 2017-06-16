@@ -62,12 +62,16 @@ mod tests {
  		assert_eq!(match_eng.find_order_by_id(&old_id).get_qty(), 84);
  	}
  	
+ 	#[test]
  	fn test_update_price() {
  		let mut match_eng = MatchingEngine::new();
  		let old_order = Order::new(100, 1000, '2');
 
  		let old_order_after = match_eng.insert(&old_order);
-
+ 		let old_id = old_order_after.get_id();
+ 		let mut new_order = Order::new(100, 1200, '2');
+ 		match_eng.update(&old_id, &new_order);
+ 		assert_eq!(match_eng.find_order_by_id(&old_id).get_price(), 1200);
 
  	}
 }
