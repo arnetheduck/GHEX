@@ -31,7 +31,7 @@ impl MatchingEngine {
     	}
     }
 
-    pub fn insert(&mut self, order: &Order) {
+    pub fn insert(&mut self, order: &Order) -> Order {
         let mut cur_order = order.clone();
         if cur_order.get_id() == "-1".to_string() {
             // New order
@@ -94,8 +94,9 @@ impl MatchingEngine {
                     self.buys_by_price.insert(cur_order.get_price(), LinkedHashMap::new());
                 }
                 let orders_list: &mut LinkedHashMap<String, Order> = self.buys_by_price.get_mut(&cur_order.get_price()).unwrap();
-                orders_list.insert(cur_order.get_id(), cur_order);
+                orders_list.insert(cur_order.get_id(), cur_order.clone());
             }
+
         } else if cur_order.get_side() == '2' {
             // Sell side
             // Look at order book and match (if possible)
@@ -151,9 +152,12 @@ impl MatchingEngine {
                     self.sells_by_price.insert(cur_order.get_price(), LinkedHashMap::new());
                 }
                 let orders_list: &mut LinkedHashMap<String, Order> = self.sells_by_price.get_mut(&cur_order.get_price()).unwrap();
-                orders_list.insert(cur_order.get_id(), cur_order);
+                orders_list.insert(cur_order.get_id(), cur_order.clone());
             }
         }
+
+        // return order object of current order after trading finished
+        cur_order
     }  
 
     pub fn delete(&mut self, ord_id: &String) {
@@ -210,7 +214,7 @@ impl MatchingEngine {
         }
     }
 
-    fn find_order_by_id(&self, ord_id: &String) -> Order {
+    pub fn find_order_by_id(&self, ord_id: &String) -> Order {
         for (key, inner_hashmap) in self.sells_by_price.clone() {
             if inner_hashmap.contains_key(ord_id) {
                 return inner_hashmap.get(ord_id).unwrap().clone();
