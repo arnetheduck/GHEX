@@ -72,6 +72,33 @@ mod tests {
  		let mut new_order = Order::new(100, 1200, '2');
  		match_eng.update(&old_id, &new_order);
  		assert_eq!(match_eng.find_order_by_id(&old_id).get_price(), 1200);
+ 	}
 
+ 	#[test]
+ 	fn test_find_order_by_id() {
+ 		let mut match_eng = MatchingEngine::new();
+ 		let mut first_order = Order::new(100, 100, '1');
+ 		// first_order: ID = 0
+ 		match_eng.insert(&first_order);
+ 		first_order.set_id(&'0'.to_string());
+ 		assert_eq!(match_eng.find_order_by_id(&first_order.get_id()), first_order);
+
+ 		let mut second_order = Order::new(50, 10, '1');
+ 		// second order: ID = 1
+ 		match_eng.insert(&second_order);
+ 		second_order.set_id(&'1'.to_string());
+ 		assert_eq!(match_eng.find_order_by_id(&second_order.get_id()), second_order);
+
+ 		let mut third_order = Order::new(125, 1, '2');
+ 		// third order: ID = 2
+ 		// Matching happens hear
+ 		match_eng.insert(&third_order);
+
+ 		third_order.set_id(&'2'.to_string());
+ 		assert_eq!(match_eng.find_order_by_id(&third_order.get_id()), Order::new(-1, -1, '*'));
+ 		assert_eq!(match_eng.find_order_by_id(&'0'.to_string()), Order::new(-1, -1, '*'));
+
+ 		second_order.set_qty(25);
+ 		assert_eq!(match_eng.find_order_by_id(&'1'.to_string()), second_order);
  	}
 }
