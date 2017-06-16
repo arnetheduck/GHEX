@@ -8,22 +8,40 @@ mod tests {
  	#[test]
  	fn update_qty_inc() {
  		let mut match_eng = MatchingEngine::new();
+ 		// old_order: quantity = 100, price = 1000, side = sell
  		let old_order = Order::new(100, 1000, '2');
+ 		// another_order: quantity = 10, price = 1000, side = sell
  		let another_order = Order::new(10, 1000, '2');
+ 		// 1st insertion (id = 0): Insert old_order (no matching happens)
+ 		// old_order_traded: return order of first insertion (copy of old_order with id = 0)
  		let old_order_traded = match_eng.insert(&old_order);
+ 		// 2nd insertion (id = 1): Insert another_order (no matching happens)
  		match_eng.insert(&another_order);
 
+ 		// old_id = 0 (id of 1st order inserted)
  		let old_id = old_order_traded.get_id();
+ 		// Create new order with same order ID as old_order to update
+ 		// new_order: quantity = 150, price = 1000, side = sell (quantity increases from 100 to 150)
  		let mut new_order = Order::new(150, 1000, '2');
  		new_order.set_id(&old_id);
- 		
+ 		// Update old_order (id = 0) with new order
  		match_eng.update(&old_id, &new_order);
+ 		// After update, order with ID = 0 is moved to the back of the queue
+
+ 		// Check quantity of updated order
  		assert_eq!(match_eng.find_order_by_id(&old_id).get_qty(), 150);
 
+ 		// yet_another_order: quantity = 11, price = 1000, side = buy
  		let yet_another_order = Order::new(11, 1000, '1');
+ 		// 3rd insertion (id = 2): Insert yet_another_order (matching happens)
+ 		// - 1st match: with another_order (id = 1, quantity = 10) -> 10 matched, 1 remaining
+ 		// - 2nd match: with old_order (id = 0, quantity = 150) -> 1 matched, 0 remaining
+ 		// => old_order: quantity = 149
  		match_eng.insert(&yet_another_order);
+ 		// Check quantity of old_order (id = 0) after matching
  		assert_eq!(match_eng.find_order_by_id(&old_id).get_qty(), 149);
  	}
+ 	
  	#[test]
  	fn update_qty_dec() {
  		let mut match_eng = MatchingEngine::new();
@@ -44,89 +62,12 @@ mod tests {
  		assert_eq!(match_eng.find_order_by_id(&old_id).get_qty(), 84);
  	}
  	
- 	// fn test_update_price() {
- 	// 	let mut match_eng = MatchingEngine::new();
- 	// 	let old_order = Order::new(100, 1000, '2');
+ 	fn test_update_price() {
+ 		let mut match_eng = MatchingEngine::new();
+ 		let old_order = Order::new(100, 1000, '2');
 
- 	// 	let old_order_after = match_eng.insert(&old_order);
-
-
- 	// }
- 	// // fn test_update_quantity_position() {
-
- 	// }
- 	// fn test_1() {
- 	// 	let mut match_eng = MatchingEngine::new();
- 	// 	let mut order_0 = Order::new(2, 850, '1');
- 	// 	let mut order_1 = Order::new(50, 900, '1');
- 	// 	let mut order_2 = Order::new(5, 900, '1');
-
- 	// 	let order_0_clone = order_0.clone(); 
- 	// 	let order_1_clone = order_1.clone();
- 	// 	let order_2_clone = order_2.clone();
- 	// 	order_0.set_transact_time(&(order_0_clone.get_transact_time() + "1".to_string().as_str()));
- 	// 	order_1.set_transact_time(&(order_1_clone.get_transact_time() + "2".to_string().as_str()));
- 	// 	order_2.set_transact_time(&(order_2_clone.get_transact_time() + "3".to_string().as_str()));
- 	// 	match_eng.insert(&order_0);
- 	// 	match_eng.insert(&order_1);
- 	// 	match_eng.insert(&order_2);
- 	// 	let mut expected_1 = Vec::new();
- 	// 	expected_1.push(&order_1);
- 	// 	expected_1.push(&order_2);
- 	// 	assert_eq!(match_eng.get_buy_orders(&900i64), expected_1);
- 	// 	match_eng.print_status();
-
- 	// 	let order_3 = &Order::new(3, 850, '2');
- 		
- 	// 	match_eng.insert(&order_3);
- 	// 	match_eng.print_status();
- 	// 	let mut order_1_after = order_1.clone();
- 	// 	order_1_after.set_qty(47);
- 	// 	let mut expected_2 = Vec::new();
- 	// 	expected_2.push(&order_1_after);
- 	// 	expected_2.push(&order_2);
- 	// 	assert_eq!(match_eng.get_buy_orders(&900i64), expected_2);
+ 		let old_order_after = match_eng.insert(&old_order);
 
 
- 	// 	let order_4 = &Order::new(55, 800, '2');
- 	// 	match_eng.insert(order_4);
- 	// 	let mut order_4_after = order_4.clone();
- 	// 	order_4_after.set_qty(1);
- 	// 	let mut expected_3 = Vec::new();
- 	// 	expected_3.push(&order_4_after);
- 		
- 	// 	assert_eq!(match_eng.get_sell_orders(&800i64), expected_3);
-
- 	// }
-//     #[test]
-//   	fn test_insert_basic() {
-//     	let mut match_eng = MatchingEngine::new();
-//     	// original orders
-//     	let sell_order_1 = &Order::new(100, 1000, '2');
-//     	let sell_order_2 = &Order::new(50, 1500, '2');
-// 		let buy_order_1 = &Order::new(200, 2000, '1');
-
-//     	match_eng.insert(sell_order_1);
-//     	match_eng.insert(sell_order_2);
-//     	let result = match_eng.insert(buy_order_1); // store resulting vector of traded order pairs 
-
-//     	let mut expected: Vec<(Order, Order)> = Vec::new();
-// 		let mut buy_1_traded = Order::new(200, 2000, '1');
-//     	buy_1_traded.set_transact_time(&buy_order_1.get_transact_time()); // need same transact time
-//     	let mut sell_1_traded = Order::new(100, 1000, '2');
-//     	sell_1_traded.set_transact_time(&sell_order_1.get_transact_time());
-// 		expected.push((buy_1_traded, sell_1_traded)); // first expected pair of orders traded
-
-//     	let mut buy_1_traded = Order::new(100, 2000, '1');
-//     	buy_1_traded.set_transact_time(&buy_order_1.get_transact_time()); 
-//     	let mut sell_2_traded = Order::new(50, 1500, '2');
-//     	sell_2_traded.set_transact_time(&sell_order_2.get_transact_time());
-// 		expected.push((buy_1_traded, sell_2_traded)); // second expected pair of orders traded 
-//     	/*
-//     		Buy      		Sell
-//     		2000 - 200 <--> 1000 - 100
-//     		2000 - 100 <--> 1500 - 50
-// 		*/
-//     	assert_eq!(result, expected);
-//     }
+ 	}
 }

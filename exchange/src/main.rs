@@ -58,7 +58,6 @@ fn update_existing_order(match_eng: &mut matching_engine::MatchingEngine) {
 	// println!("{}", m_qty);		
 
 	let mut new_order = objects::Order::new(m_qty, m_price, '*');
-	new_order.set_id(&m_id);
 	match_eng.update(&m_id, &new_order);
 }
 

@@ -182,13 +182,14 @@ impl MatchingEngine {
 
     pub fn update(&mut self, ord_id: &String, order: &Order) {
         // Find existing order by order ID
-        let existing_ord: Order = self.find_order_by_id(&ord_id);
+        let existing_ord: Order = self.find_order_by_id(ord_id);
         // Order not found, exit
         if existing_ord.get_side() == '*' {
             ()
         }
         let mut order_clone = order.clone();
-        order_clone.set_side(existing_ord.get_side());        
+        order_clone.set_side(existing_ord.get_side());
+        order_clone.set_id(ord_id);        
         // Compare updated order object with existing order
         if order.get_price() == existing_ord.get_price() {
             if existing_ord.get_side() == '1' {
@@ -210,7 +211,7 @@ impl MatchingEngine {
             }
         } else {
             self.delete(ord_id);
-            self.insert(order);
+            self.insert(&order_clone);
         }
     }
 
