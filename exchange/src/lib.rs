@@ -5,6 +5,35 @@ mod tests {
 
 	use super::objects::Order;
  	use super::matching_engine::MatchingEngine;
+
+ 	#[test]
+ 	fn test_find_order_by_id() {
+ 		let mut match_eng = MatchingEngine::new();
+ 		let mut first_order = Order::new(100, 100, '1');
+ 		// first_order: ID = 0
+ 		match_eng.insert(&first_order);
+ 		first_order.set_id(&'0'.to_string());
+ 		assert_eq!(match_eng.find_order_by_id(&first_order.get_id()), first_order);
+
+ 		let mut second_order = Order::new(50, 10, '1');
+ 		// second order: ID = 1
+ 		match_eng.insert(&second_order);
+ 		second_order.set_id(&'1'.to_string());
+ 		assert_eq!(match_eng.find_order_by_id(&second_order.get_id()), second_order);
+
+ 		let mut third_order = Order::new(125, 1, '2');
+ 		// third order: ID = 2
+ 		// Matching happens hear
+ 		match_eng.insert(&third_order);
+
+ 		third_order.set_id(&'2'.to_string());
+ 		assert_eq!(match_eng.find_order_by_id(&third_order.get_id()), Order::new(-1, -1, '*'));
+ 		assert_eq!(match_eng.find_order_by_id(&'0'.to_string()), Order::new(-1, -1, '*'));
+
+ 		second_order.set_qty(25);
+ 		assert_eq!(match_eng.find_order_by_id(&'1'.to_string()), second_order);
+ 	}
+
  	#[test]
  	fn update_qty_inc() {
  		let mut match_eng = MatchingEngine::new();
@@ -44,61 +73,59 @@ mod tests {
  	
  	#[test]
  	fn update_qty_dec() {
+ 		// insert orders
  		let mut match_eng = MatchingEngine::new();
  		let old_order = Order::new(100, 1000, '2');
  		let another_order = Order::new(10, 1000, '2');
  		let old_order_after = match_eng.insert(&old_order);
  		match_eng.insert(&another_order);
 
+ 		// update old_order with new quantity 95
  		let old_id = old_order_after.get_id();
  		let mut new_order = Order::new(95, 1000, '2');
  		new_order.set_id(&old_id);
- 		
  		match_eng.update(&old_id, &new_order);
+
+ 		// check that order quantity was updated correctly
  		assert_eq!(match_eng.find_order_by_id(&old_id).get_qty(), 95);
 
+ 		// insert buy order to trigger trade
  		let yet_another_order = Order::new(11, 1000, '1');
  		match_eng.insert(&yet_another_order);
+
+ 		// check that order position is correct after update
+ 		// since qty decreased, old_order keeps its place in queue
+ 		// so quantity traded should be 95 - 11 = 84
  		assert_eq!(match_eng.find_order_by_id(&old_id).get_qty(), 84);
  	}
  	
  	#[test]
  	fn test_update_price() {
+ 		// insert order
  		let mut match_eng = MatchingEngine::new();
  		let old_order = Order::new(100, 1000, '2');
-
  		let old_order_after = match_eng.insert(&old_order);
+
+ 		// update price of inserted order
  		let old_id = old_order_after.get_id();
  		let mut new_order = Order::new(100, 1200, '2');
  		match_eng.update(&old_id, &new_order);
+
+ 		// check that the order price was updated correctly
  		assert_eq!(match_eng.find_order_by_id(&old_id).get_price(), 1200);
  	}
 
  	#[test]
- 	fn test_find_order_by_id() {
+ 	fn test_delete() {
  		let mut match_eng = MatchingEngine::new();
- 		let mut first_order = Order::new(100, 100, '1');
- 		// first_order: ID = 0
- 		match_eng.insert(&first_order);
- 		first_order.set_id(&'0'.to_string());
- 		assert_eq!(match_eng.find_order_by_id(&first_order.get_id()), first_order);
+ 		let order = Order::new(100, 1000, '1');
+ 		let order_id = match_eng.insert(&order).get_id();
+ 		match_eng.delete(&order_id);
 
- 		let mut second_order = Order::new(50, 10, '1');
- 		// second order: ID = 1
- 		match_eng.insert(&second_order);
- 		second_order.set_id(&'1'.to_string());
- 		assert_eq!(match_eng.find_order_by_id(&second_order.get_id()), second_order);
+ 		// check that order was deleted
+ 		// if order not found, find_order_by_id() returns dummy order with qty = -1
+ 		assert_eq!(match_eng.find_order_by_id(&order_id).get_qty(), -1);
 
- 		let mut third_order = Order::new(125, 1, '2');
- 		// third order: ID = 2
- 		// Matching happens hear
- 		match_eng.insert(&third_order);
-
- 		third_order.set_id(&'2'.to_string());
- 		assert_eq!(match_eng.find_order_by_id(&third_order.get_id()), Order::new(-1, -1, '*'));
- 		assert_eq!(match_eng.find_order_by_id(&'0'.to_string()), Order::new(-1, -1, '*'));
-
- 		second_order.set_qty(25);
- 		assert_eq!(match_eng.find_order_by_id(&'1'.to_string()), second_order);
  	}
+ 	
 }
