@@ -1,6 +1,8 @@
 use std::cmp::Ordering;
+use self::serde::ser::{Serialize, Serializer, SerializeStruct};
 
 extern crate time;
+extern crate serde;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Order {
@@ -136,5 +138,20 @@ impl PartialOrd for Order {
 impl Ord for Order {
     fn cmp(&self, other: &Order) -> Ordering {
         self.partial_cmp(other).unwrap()
+    }
+}
+
+impl Serialize for Order {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where S: Serializer
+    {
+        // 5 is the number of fields in the struct.
+        let mut state = serializer.serialize_struct("Order", 5)?;
+        state.serialize_field("id", &self.id)?;
+        state.serialize_field("order_qty", &self.order_qty)?;
+        state.serialize_field("price", &self.price)?;
+        state.serialize_field("side", &self.side)?;
+        state.serialize_field("transact_time", &self.transact_time)?;
+        state.end()
     }
 }

@@ -125,7 +125,6 @@ mod tests {
  		// check that order was deleted
  		// if order not found, find_order_by_id() returns dummy order with qty = -1
  		assert_eq!(match_eng.find_order_by_id(&order_id).get_qty(), -1);
-
  	}
  	
 }

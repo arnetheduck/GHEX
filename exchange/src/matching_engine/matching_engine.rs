@@ -1,9 +1,15 @@
 extern crate linked_hash_map;
+extern crate serde_json;
 
 use std::cmp;
+use std::net::UdpSocket;
+use std::str;
 use objects::Order;
 use std::collections::HashMap;
 use self::linked_hash_map::LinkedHashMap;
+
+const SERVER_ADDRESS: &str = "192.168.1.8:21003";
+const MULTICAST_GROUP_ADDRESS: &str = "239.194.5.3:21003";
 
 pub struct MatchingEngine {
     /* 
@@ -12,7 +18,8 @@ pub struct MatchingEngine {
     */
     sells_by_price: HashMap<i64, LinkedHashMap<String, Order>>,
     buys_by_price: HashMap<i64, LinkedHashMap<String, Order>>,
-    id_count: i64
+    id_count: i64,
+    socket: UdpSocket,
 }
 
 impl MatchingEngine {
@@ -27,7 +34,8 @@ impl MatchingEngine {
     	MatchingEngine {
             sells_by_price: HashMap::new(),
             buys_by_price: HashMap::new(),
-            id_count: 0
+            id_count: 0,
+            socket: UdpSocket::bind(SERVER_ADDRESS).unwrap(),
     	}
     }
 
@@ -38,6 +46,9 @@ impl MatchingEngine {
             cur_order.set_id(&self.id_count.to_string());
             self.id_count += 1;
         }
+
+        // Multicast new order inserted
+        self.multicast(serde_json::to_string(&order).unwrap());
 
         if cur_order.get_side() == '1' {
             // Buy side
@@ -96,7 +107,6 @@ impl MatchingEngine {
                 let orders_list: &mut LinkedHashMap<String, Order> = self.buys_by_price.get_mut(&cur_order.get_price()).unwrap();
                 orders_list.insert(cur_order.get_id(), cur_order.clone());
             }
-
         } else if cur_order.get_side() == '2' {
             // Sell side
             // Look at order book and match (if possible)
@@ -308,6 +318,11 @@ impl MatchingEngine {
 
             println!("| {0: >40} | {1: ^10} | {2: <40} |", 
             "", cur_price, cur_line);
-        }        
+        }
+    }
+
+    fn multicast(&self, contents: String) {
+        let send_buffer = contents.into_bytes();
+        self.socket.send_to(&send_buffer, MULTICAST_GROUP_ADDRESS);
     }
 }
