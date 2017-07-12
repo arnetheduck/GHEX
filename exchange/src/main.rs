@@ -1,4 +1,7 @@
 use std::io;
+use std::thread;
+use std::sync::mpsc::channel;
+use std::time::Duration;
 
 mod objects;
 mod matching_engine;
@@ -62,8 +65,18 @@ fn update_existing_order(match_eng: &mut matching_engine::MatchingEngine) {
 }
 
 fn main() {
-	let mut match_eng = matching_engine::MatchingEngine::new();
-	
+	let (tx, rx) = channel();
+	let mut match_eng = matching_engine::MatchingEngine::new(&tx);
+	// run MDS recovery thread
+
+	let snapshot_thread = thread::spawn(move || {
+		// how to send tx to main thread?
+		println!("{:?}", rx.recv().unwrap());
+
+
+
+	});
+
 	loop {
 		println!("{:*<1$}", "", 80);
 		println!("Continue? (y/n) ");

@@ -7,6 +7,7 @@ use std::str;
 use objects::Order;
 use std::collections::HashMap;
 use self::linked_hash_map::LinkedHashMap;
+use std::sync::mpsc;
 
 const SERVER_ADDRESS: &str = "192.168.1.8:21003";
 const MULTICAST_GROUP_ADDRESS: &str = "239.194.5.3:21003";
@@ -20,6 +21,7 @@ pub struct MatchingEngine {
     buys_by_price: HashMap<i64, LinkedHashMap<String, Order>>,
     id_count: i64,
     socket: UdpSocket,
+    send_channel: mpsc::Sender<String>
 }
 
 impl MatchingEngine {
@@ -30,12 +32,14 @@ impl MatchingEngine {
 		@return
 			New matching engine with empty Hash Maps for sell and buy orders
 	*/
-    pub fn new() -> MatchingEngine { 
+    pub fn new(sender: &mpsc::Sender<String>) -> MatchingEngine { 
+        
     	MatchingEngine {
             sells_by_price: HashMap::new(),
             buys_by_price: HashMap::new(),
             id_count: 0,
             socket: UdpSocket::bind(SERVER_ADDRESS).unwrap(),
+            send_channel: sender.clone()
     	}
     }
 
@@ -49,7 +53,7 @@ impl MatchingEngine {
 
         // Multicast new order inserted
         self.multicast(serde_json::to_string(&order).unwrap());
-
+        self.send_channel.send("1".to_string());
         if cur_order.get_side() == '1' {
             // Buy side
             // Look at order book and match (if possible)
