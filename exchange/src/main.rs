@@ -1,10 +1,11 @@
 use std::io;
 use std::thread;
 use std::sync::mpsc::channel;
-use std::time::Duration;
+use std::net::UdpSocket;
 
 mod objects;
 mod matching_engine;
+const MULTICAST_GROUP_ADDRESS: &str = "239.255.255.255:21003";
 
 fn insert_new_order(match_eng: &mut matching_engine::MatchingEngine) {
 	// Ask user to input new order
@@ -63,17 +64,28 @@ fn update_existing_order(match_eng: &mut matching_engine::MatchingEngine) {
 	let mut new_order = objects::Order::new(m_qty, m_price, '*');
 	match_eng.update(&m_id, &new_order);
 }
+fn publish_snaphot(state: String, socket: &UdpSocket) {
+	socket.send_to(&state.into_bytes(), MULTICAST_GROUP_ADDRESS);
+}
 
 fn main() {
+	// create channel for ME thread to communicate with recovery thread
 	let (tx, rx) = channel();
+
 	let mut match_eng = matching_engine::MatchingEngine::new(&tx);
+	
 	// run MDS recovery thread
-
+	// how often do we need to send snapshots?
+	// do clients subscribe to different multicast group for recovery vs increment?
 	let snapshot_thread = thread::spawn(move || {
-		// how to send tx to main thread?
-		println!("{:?}", rx.recv().unwrap());
-
-
+		let sock = UdpSocket::bind("0.0.0.0:21003").unwrap();
+		loop {
+			let msg = rx.recv();
+			match msg {
+				Ok(v) => publish_snaphot(v.clone(), &sock),
+				Err(r) => continue,
+			}		
+		}
 
 	});
 

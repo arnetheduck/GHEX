@@ -9,7 +9,8 @@ use std::collections::HashMap;
 use self::linked_hash_map::LinkedHashMap;
 use std::sync::mpsc;
 
-const SERVER_ADDRESS: &str = "192.168.1.8:21003";
+
+const SERVER_ADDRESS: &str = "192.168.1.7:21003";
 const MULTICAST_GROUP_ADDRESS: &str = "239.194.5.3:21003";
 
 pub struct MatchingEngine {
@@ -33,7 +34,6 @@ impl MatchingEngine {
 			New matching engine with empty Hash Maps for sell and buy orders
 	*/
     pub fn new(sender: &mpsc::Sender<String>) -> MatchingEngine { 
-        
     	MatchingEngine {
             sells_by_price: HashMap::new(),
             buys_by_price: HashMap::new(),
@@ -41,6 +41,8 @@ impl MatchingEngine {
             socket: UdpSocket::bind(SERVER_ADDRESS).unwrap(),
             send_channel: sender.clone()
     	}
+
+
     }
 
     pub fn insert(&mut self, order: &Order) -> Order {
@@ -53,7 +55,9 @@ impl MatchingEngine {
 
         // Multicast new order inserted
         self.multicast(serde_json::to_string(&order).unwrap());
+        // send update info to recovery thread
         self.send_channel.send("1".to_string());
+
         if cur_order.get_side() == '1' {
             // Buy side
             // Look at order book and match (if possible)
