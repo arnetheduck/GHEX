@@ -8,9 +8,11 @@ use objects::Order;
 use std::collections::HashMap;
 use self::linked_hash_map::LinkedHashMap;
 use std::sync::mpsc;
+use self::serde::ser::{Serialize, Serializer, SerializeStruct};
 
+extern crate serde;
 
-const SERVER_ADDRESS: &str = "192.168.1.7:21003";
+const SERVER_ADDRESS: &str = "192.168.1.8:21003";
 const MULTICAST_GROUP_ADDRESS: &str = "239.194.5.3:21003";
 
 pub struct MatchingEngine {
@@ -22,7 +24,25 @@ pub struct MatchingEngine {
     buys_by_price: HashMap<i64, LinkedHashMap<String, Order>>,
     id_count: i64,
     socket: UdpSocket,
-    send_channel: mpsc::Sender<String>
+    send_channel: mpsc::Sender<String>,
+    seq_number: i64,
+}
+
+struct IncrementalMessage {
+    seq_number: i64,
+    orders_vec: Vec<Order>,
+}
+
+impl Serialize for IncrementalMessage {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where S: Serializer
+    {
+        // 5 is the number of fields in the struct.
+        let mut state = serializer.serialize_struct("IncrementalMessage", 2)?;
+        state.serialize_field("seq_number", &self.seq_number)?;
+        state.serialize_field("orders_vec", &self.orders_vec)?;
+        state.end()
+    }
 }
 
 impl MatchingEngine {
@@ -39,10 +59,9 @@ impl MatchingEngine {
             buys_by_price: HashMap::new(),
             id_count: 0,
             socket: UdpSocket::bind(SERVER_ADDRESS).unwrap(),
-            send_channel: sender.clone()
+            send_channel: sender.clone(),
+            seq_number: 0,
     	}
-
-
     }
 
     pub fn insert(&mut self, order: &Order) -> Order {
@@ -52,11 +71,6 @@ impl MatchingEngine {
             cur_order.set_id(&self.id_count.to_string());
             self.id_count += 1;
         }
-
-        // Multicast new order inserted
-        self.multicast(serde_json::to_string(&order).unwrap());
-        // send update info to recovery thread
-        self.send_channel.send("1".to_string());
 
         if cur_order.get_side() == '1' {
             // Buy side
@@ -74,32 +88,39 @@ impl MatchingEngine {
                 }
                 // Get all sell orders at lowest price
                 {
-                    let best_price_orders: &mut LinkedHashMap<String, Order> = self.sells_by_price.get_mut(&best_sell_price).unwrap();
-                    while !best_price_orders.is_empty() && cur_order.get_qty() > 0 {
-                        let key: String;
-                        let sell_order: Order;
-                        // Get key and order object of the first order in Hash Map
+                    while true {
                         {
-                            let (m_key, m_sell_order) = best_price_orders.front().unwrap();
-                            key = m_key.clone();
-                            sell_order = m_sell_order.clone();
+                            let best_price_orders: &mut LinkedHashMap<String, Order> = self.sells_by_price.get_mut(&best_sell_price).unwrap();
+                            if best_price_orders.is_empty() || cur_order.get_qty() == 0 {
+                                break;
+                            }
+                            let key: String;
+                            let sell_order: Order;
+                            // Get key and order object of the first order in Hash Map
+                            {
+                                let (m_key, m_sell_order) = best_price_orders.front().unwrap();
+                                key = m_key.clone();
+                                sell_order = m_sell_order.clone();
+                            }
+                            let mut min_sell = sell_order.clone();
+                            // Determine quantity matched
+                            // i.e, Minimum quantity of buy and sell order
+                            let qty_trade = cmp::min(min_sell.get_qty(), cur_order.get_qty());
+                            // Update the remaining quantity for sell order
+                            let min_sell_qty = min_sell.get_qty();
+                            min_sell.set_qty(min_sell_qty - qty_trade);
+                            // Update the remaining quantity for buy order (new order inserted)
+                            let cur_order_qty = cur_order.get_qty();
+                            cur_order.set_qty(cur_order_qty - qty_trade);
+                            // Delete sell order (if fully matched)
+                            if min_sell.get_qty() == 0 {
+                                best_price_orders.pop_front();
+                            } else {
+                                best_price_orders.get_mut(&key).unwrap().set_qty(min_sell.get_qty());
+                            }                            
                         }
-                        let mut min_sell = sell_order.clone();
-                        // Determine quantity matched
-                        // i.e, Minimum quantity of buy and sell order
-                        let qty_trade = cmp::min(min_sell.get_qty(), cur_order.get_qty());
-                        // Update the remaining quantity for sell order
-                        let min_sell_qty = min_sell.get_qty();
-                        min_sell.set_qty(min_sell_qty - qty_trade);
-                        // Update the remaining quantity for buy order (new order inserted)
-                        let cur_order_qty = cur_order.get_qty();
-                        cur_order.set_qty(cur_order_qty - qty_trade);
-                        // Delete sell order (if fully matched)
-                        if min_sell.get_qty() == 0 {
-                            best_price_orders.pop_front();
-                        } else {
-                            best_price_orders.get_mut(&key).unwrap().set_qty(min_sell.get_qty());
-                        }
+                        // Multicast incremental feed after a matching
+                        self.incremental_feed(&best_sell_price);
                     }
                 }
                 if self.sells_by_price.get(&best_sell_price).unwrap().is_empty() {
@@ -112,8 +133,14 @@ impl MatchingEngine {
                 if !self.buys_by_price.contains_key(&cur_order.get_price()) {
                     self.buys_by_price.insert(cur_order.get_price(), LinkedHashMap::new());
                 }
-                let orders_list: &mut LinkedHashMap<String, Order> = self.buys_by_price.get_mut(&cur_order.get_price()).unwrap();
-                orders_list.insert(cur_order.get_id(), cur_order.clone());
+                
+                {
+                    let orders_list: &mut LinkedHashMap<String, Order> = self.buys_by_price.get_mut(&cur_order.get_price()).unwrap();
+                    orders_list.insert(cur_order.get_id(), cur_order.clone());
+                }
+
+                // Multicast incremental feed
+                self.incremental_feed(&cur_order.get_price());
             }
         } else if cur_order.get_side() == '2' {
             // Sell side
@@ -131,32 +158,39 @@ impl MatchingEngine {
                 }
                 // Get all buy orders at highest price
                 {
-                    let best_price_orders: &mut LinkedHashMap<String, Order> = self.buys_by_price.get_mut(&best_buy_price).unwrap();
-                    while !best_price_orders.is_empty() && cur_order.get_qty() > 0 {
-                        let key: String;
-                        let buy_order: Order;
-                        // Get key and order object of the first order in Hash Map
+                    while true {
                         {
-                            let (m_key, m_buy_order) = best_price_orders.front().unwrap();
-                            key = m_key.clone();
-                            buy_order = m_buy_order.clone();
+                            let best_price_orders: &mut LinkedHashMap<String, Order> = self.buys_by_price.get_mut(&best_buy_price).unwrap();
+                            if best_price_orders.is_empty() || cur_order.get_qty() == 0 {
+                                break;
+                            }
+                            let key: String;
+                            let buy_order: Order;
+                            // Get key and order object of the first order in Hash Map
+                            {
+                                let (m_key, m_buy_order) = best_price_orders.front().unwrap();
+                                key = m_key.clone();
+                                buy_order = m_buy_order.clone();
+                            }
+                            let mut max_buy = buy_order.clone();
+                            // Determine quantity matched
+                            // i.e, Minimum quantity of buy and sell order
+                            let qty_trade = cmp::min(max_buy.get_qty(), cur_order.get_qty());
+                            // Update the remaining quantity for buy order
+                            let max_buy_qty = max_buy.get_qty();
+                            max_buy.set_qty(max_buy_qty - qty_trade);
+                            // Update the remaining quantity for sell order (new order inserted)
+                            let cur_order_qty = cur_order.get_qty();
+                            cur_order.set_qty(cur_order_qty - qty_trade);
+                            // Delete buy order (if fully matched)
+                            if max_buy.get_qty() == 0 {
+                                best_price_orders.pop_front();
+                            } else {
+                                best_price_orders.get_mut(&key).unwrap().set_qty(max_buy.get_qty());
+                            }                            
                         }
-                        let mut max_buy = buy_order.clone();
-                        // Determine quantity matched
-                        // i.e, Minimum quantity of buy and sell order
-                        let qty_trade = cmp::min(max_buy.get_qty(), cur_order.get_qty());
-                        // Update the remaining quantity for buy order
-                        let max_buy_qty = max_buy.get_qty();
-                        max_buy.set_qty(max_buy_qty - qty_trade);
-                        // Update the remaining quantity for sell order (new order inserted)
-                        let cur_order_qty = cur_order.get_qty();
-                        cur_order.set_qty(cur_order_qty - qty_trade);
-                        // Delete buy order (if fully matched)
-                        if max_buy.get_qty() == 0 {
-                            best_price_orders.pop_front();
-                        } else {
-                            best_price_orders.get_mut(&key).unwrap().set_qty(max_buy.get_qty());
-                        }
+                        // Multicast incremental feed after a matching
+                        self.incremental_feed(&best_buy_price);                        
                     }
                 }
                 if self.buys_by_price.get(&best_buy_price).unwrap().is_empty() {
@@ -169,8 +203,14 @@ impl MatchingEngine {
                 if !self.sells_by_price.contains_key(&cur_order.get_price()) {
                     self.sells_by_price.insert(cur_order.get_price(), LinkedHashMap::new());
                 }
-                let orders_list: &mut LinkedHashMap<String, Order> = self.sells_by_price.get_mut(&cur_order.get_price()).unwrap();
-                orders_list.insert(cur_order.get_id(), cur_order.clone());
+
+                {
+                    let orders_list: &mut LinkedHashMap<String, Order> = self.sells_by_price.get_mut(&cur_order.get_price()).unwrap();
+                    orders_list.insert(cur_order.get_id(), cur_order.clone());
+                }
+
+                // Multicast incremental feed
+                self.incremental_feed(&cur_order.get_price());                
             }
         }
 
@@ -183,18 +223,23 @@ impl MatchingEngine {
 
         if existing_ord.get_side() == '*' {
             ()
-        } else if existing_ord.get_side() == '1' {
+        } else {
+            if existing_ord.get_side() == '1' {
             // Buy side
-            self.buys_by_price.get_mut(&existing_ord.get_price()).unwrap().remove(ord_id);
-            if self.buys_by_price.get(&existing_ord.get_price()).unwrap().is_empty() {
-                self.buys_by_price.remove(&existing_ord.get_price());
-            }
-        } else if existing_ord.get_side() == '2' {
+                self.buys_by_price.get_mut(&existing_ord.get_price()).unwrap().remove(ord_id);
+                if self.buys_by_price.get(&existing_ord.get_price()).unwrap().is_empty() {
+                    self.buys_by_price.remove(&existing_ord.get_price());
+                }
+            } else if existing_ord.get_side() == '2' {
             // Sell side
-            self.sells_by_price.get_mut(&existing_ord.get_price()).unwrap().remove(ord_id);
-            if self.sells_by_price.get(&existing_ord.get_price()).unwrap().is_empty() {
-                self.sells_by_price.remove(&existing_ord.get_price());
+                self.sells_by_price.get_mut(&existing_ord.get_price()).unwrap().remove(ord_id);
+                if self.sells_by_price.get(&existing_ord.get_price()).unwrap().is_empty() {
+                    self.sells_by_price.remove(&existing_ord.get_price());
+                }
             }
+
+            // Multicast incremental feed after deleting
+            self.incremental_feed(&existing_ord.get_price());
         }
     }    
 
@@ -227,6 +272,9 @@ impl MatchingEngine {
                     self.sells_by_price.get_mut(&existing_ord.get_price()).unwrap().get_mut(ord_id).unwrap().set_qty(order.get_qty());   
                 }
             }
+
+            // Multicast incremental feed after updating
+            self.incremental_feed(&existing_ord.get_price());            
         } else {
             self.delete(ord_id);
             self.insert(&order_clone);
@@ -327,6 +375,52 @@ impl MatchingEngine {
             println!("| {0: >40} | {1: ^10} | {2: <40} |", 
             "", cur_price, cur_line);
         }
+    }
+
+    fn get_orders_by_price(&self, price: &i64) -> Vec<Order> {
+        // Get all buy orders at a specific price (A Linked Hash Map)
+        let buy_orders = self.buys_by_price.get(&price);
+
+        // Convert Linked Hash Map into a Vector
+        let mut buys_vec: Vec<Order> = Vec::new();
+        if buy_orders != None {
+            for order in buy_orders.unwrap().values() {
+                buys_vec.push(order.clone());
+            }
+            return buys_vec.clone();
+        }
+
+        // Get all sell orders at a specific price (A Linked Hash Map)
+        let sell_orders = self.sells_by_price.get(&price);
+
+        // Convert Linked Hash Map into a Vector
+        let mut sells_vec: Vec<Order> = Vec::new();
+        if sell_orders != None {
+            for order in sell_orders.unwrap().values() {
+                sells_vec.push(order.clone());
+            }
+            return sells_vec.clone();
+        }        
+
+        Vec::new()
+    }
+
+    fn incremental_feed(&mut self, price_affected: &i64) {
+        self.seq_number += 1;
+
+        let message = IncrementalMessage {
+            seq_number: self.seq_number,
+            orders_vec: self.get_orders_by_price(&price_affected),
+        };
+
+        // Convert incremental feed to JSON format for multicasting
+        let incre_feed = serde_json::to_string(&message).unwrap();
+        // Multicast latest status at the price of the new order
+        self.multicast(incre_feed.clone());
+        // send update info to recovery thread
+        self.send_channel.send(incre_feed.clone());    
+
+        println!("{:?}", incre_feed);
     }
 
     fn multicast(&self, contents: String) {
