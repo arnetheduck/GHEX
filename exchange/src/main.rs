@@ -4,8 +4,7 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
-use std::io;
-use std::thread;
+use std::{io, thread};
 use std::sync::mpsc::channel;
 use std::net::UdpSocket;
 

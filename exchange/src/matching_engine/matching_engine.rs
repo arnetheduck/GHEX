@@ -1,17 +1,12 @@
 extern crate linked_hash_map;
 extern crate serde_json;
-extern crate serde;
 
-use std::cmp;
+use std::{cmp, str};
 use std::net::UdpSocket;
-use std::str;
-use objects::Order;
+use objects::{Order, IncrementalMessage};
 use std::collections::HashMap;
 use self::linked_hash_map::LinkedHashMap;
 use std::sync::mpsc;
-use self::serde::ser::{Serialize, Serializer, SerializeStruct};
-use self::serde::de::{Deserialize};
-use objects::IncrementalMessage;
 
 const SERVER_ADDRESS: &str = "192.168.1.8:21003";
 const MULTICAST_GROUP_ADDRESS: &str = "239.194.5.3:21003";

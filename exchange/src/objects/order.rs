@@ -1,8 +1,8 @@
-use std::cmp::Ordering;
-use self::serde::ser::{Serialize, Serializer, SerializeStruct};
-
 extern crate time;
 extern crate serde;
+
+use std::cmp::Ordering;
+use self::serde::ser::{Serialize, Serializer, SerializeStruct};
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct Order {
@@ -42,6 +42,7 @@ impl Order {
     pub fn get_id(&self) -> String {
         self.id.clone()
     }
+    
     // Quantity getter: return quantity of order 
     pub fn get_qty(&self) -> i64 {
         self.order_qty
