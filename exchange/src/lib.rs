@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate serde_derive;
+
 mod objects;
 mod matching_engine;
 #[cfg(test)]

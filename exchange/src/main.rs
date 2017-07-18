@@ -1,3 +1,9 @@
+#[macro_use]
+extern crate serde_derive;
+
+extern crate serde;
+extern crate serde_json;
+
 use std::io;
 use std::thread;
 use std::sync::mpsc::channel;
@@ -82,7 +88,10 @@ fn main() {
 		loop {
 			let msg = rx.recv();
 			match msg {
-				Ok(v) => publish_snaphot(v.clone(), &sock),
+				Ok(v) => {
+					let msg: objects::IncrementalMessage = serde_json::from_str(v.as_str()).unwrap();
+					publish_snaphot(v.clone(), &sock)
+				},
 				Err(r) => continue,
 			}		
 		}

@@ -1,5 +1,6 @@
 extern crate linked_hash_map;
 extern crate serde_json;
+extern crate serde;
 
 use std::cmp;
 use std::net::UdpSocket;
@@ -9,8 +10,8 @@ use std::collections::HashMap;
 use self::linked_hash_map::LinkedHashMap;
 use std::sync::mpsc;
 use self::serde::ser::{Serialize, Serializer, SerializeStruct};
-
-extern crate serde;
+use self::serde::de::{Deserialize};
+use objects::IncrementalMessage;
 
 const SERVER_ADDRESS: &str = "192.168.1.8:21003";
 const MULTICAST_GROUP_ADDRESS: &str = "239.194.5.3:21003";
@@ -26,23 +27,6 @@ pub struct MatchingEngine {
     socket: UdpSocket,
     send_channel: mpsc::Sender<String>,
     seq_number: i64,
-}
-
-struct IncrementalMessage {
-    seq_number: i64,
-    orders_vec: Vec<Order>,
-}
-
-impl Serialize for IncrementalMessage {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer
-    {
-        // 5 is the number of fields in the struct.
-        let mut state = serializer.serialize_struct("IncrementalMessage", 2)?;
-        state.serialize_field("seq_number", &self.seq_number)?;
-        state.serialize_field("orders_vec", &self.orders_vec)?;
-        state.end()
-    }
 }
 
 impl MatchingEngine {
@@ -408,10 +392,7 @@ impl MatchingEngine {
     fn incremental_feed(&mut self, price_affected: &i64) {
         self.seq_number += 1;
 
-        let message = IncrementalMessage {
-            seq_number: self.seq_number,
-            orders_vec: self.get_orders_by_price(&price_affected),
-        };
+        let message = IncrementalMessage::new(self.seq_number, self.get_orders_by_price(&price_affected));
 
         // Convert incremental feed to JSON format for multicasting
         let incre_feed = serde_json::to_string(&message).unwrap();
@@ -420,7 +401,7 @@ impl MatchingEngine {
         // send update info to recovery thread
         self.send_channel.send(incre_feed.clone());    
 
-        println!("{:?}", incre_feed);
+        // println!("{:?}", incre_feed);
     }
 
     fn multicast(&self, contents: String) {
