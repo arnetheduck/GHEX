@@ -7,7 +7,8 @@ extern crate serde_json;
 use std::{io, thread};
 use std::sync::mpsc::channel;
 use std::net::UdpSocket;
-
+use std::collections::HashMap;
+use objects::Order;
 mod objects;
 mod matching_engine;
 const MULTICAST_GROUP_ADDRESS: &str = "239.255.255.255:21003";
@@ -83,17 +84,39 @@ fn main() {
 	// how often do we need to send snapshots?
 	// do clients subscribe to different multicast group for recovery vs increment?
 	let snapshot_thread = thread::spawn(move || {
+		// create socket for this thread 
 		let sock = UdpSocket::bind("0.0.0.0:21003").unwrap();
+		// create hash map to maintain current state of match_eng
+		let mut sells_by_price: HashMap<i64, Vec<Order>> = HashMap::new();
+    	let mut buys_by_price: HashMap<i64, Vec<Order>> = HashMap::new();
+
 		loop {
 			let msg = rx.recv();
 			match msg {
 				Ok(v) => {
-					let msg: objects::IncrementalMessage = serde_json::from_str(v.as_str()).unwrap();
-					publish_snaphot(v.clone(), &sock)
-				},
+					let val: objects::IncrementalMessage = serde_json::from_str(v.as_str()).unwrap();
+					
+					// update state of matching engine
+					let side = val.get_orders()[0].get_side();
+					if side == '1' {
+						buys_by_price.insert(val.get_price(), val.get_orders());
+					}
+					else if side == '2' {
+						sells_by_price.insert(val.get_price(), val.get_orders());
+					}
+					let mut state: Vec<&Vec<Order>> = Vec::new();
+					for vector in sells_by_price.values() {
+						state.push(vector);
+					}
+					for vector in buys_by_price.values() {
+						state.push(vector);
+					}
+					publish_snaphot(serde_json::to_string(&state).unwrap(), &sock);
+				}
 				Err(r) => continue,
+				
 			}		
-		}
+		}	
 
 	});
 
