@@ -4,7 +4,7 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
-use std::{io, thread};
+use std::{io, thread, time};
 use std::sync::mpsc::channel;
 use std::net::UdpSocket;
 use std::collections::HashMap;
@@ -91,6 +91,7 @@ fn main() {
     	let mut buys_by_price: HashMap<i64, Vec<Order>> = HashMap::new();
 
 		loop {
+			thread::sleep(time::Duration::from_secs(5));
 			let msg = rx.recv();
 			match msg {
 				Ok(v) => {
@@ -104,13 +105,23 @@ fn main() {
 					else if side == '2' {
 						sells_by_price.insert(val.get_price(), val.get_orders());
 					}
+					// combine orders in one vector to represent current market by price
+					// state vector sorted by increasing price
 					let mut state: Vec<&Vec<Order>> = Vec::new();
+					let mut state_sells: Vec<&Vec<Order>> = Vec::new();
+
 					for vector in sells_by_price.values() {
-						state.push(vector);
+						state_sells.push(vector);
 					}
+					state_sells.sort();
+					state_sells.reverse();
 					for vector in buys_by_price.values() {
 						state.push(vector);
 					}
+					state.sort();
+					state.append(&mut state_sells);
+					
+					println!("state: {:?}", state);
 					publish_snaphot(serde_json::to_string(&state).unwrap(), &sock);
 				}
 				Err(r) => continue,
