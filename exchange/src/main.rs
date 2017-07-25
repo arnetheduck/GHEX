@@ -9,9 +9,11 @@ use std::sync::mpsc::channel;
 use std::net::UdpSocket;
 use std::collections::HashMap;
 use objects::Order;
+use std::time::{Duration, SystemTime};
 mod objects;
 mod matching_engine;
 const MULTICAST_GROUP_ADDRESS: &str = "239.255.255.255:21003";
+const RECOVERY_PERIOD: u64 = 5;
 
 fn insert_new_order(match_eng: &mut matching_engine::MatchingEngine) {
 	// Ask user to input new order
@@ -90,9 +92,21 @@ fn main() {
 		let mut sells_by_price: HashMap<i64, Vec<Order>> = HashMap::new();
     	let mut buys_by_price: HashMap<i64, Vec<Order>> = HashMap::new();
 
+		// combine orders in one vector to represent current market by price
+		// state vector sorted by increasing price
+		let init_state: Vec<&Vec<Order>> = Vec::new();
+		let mut cur_state = serde_json::to_string(&init_state).unwrap();
+
+		let mut timer = SystemTime::now();
 		loop {
-			thread::sleep(time::Duration::from_secs(5));
-			let msg = rx.recv();
+			let cur_time = SystemTime::now();
+			if cur_time.duration_since(timer).unwrap() >= Duration::new(RECOVERY_PERIOD, 0) {
+				// println!("state: {:?}", cur_state);
+				publish_snaphot(cur_state.clone(), &sock);
+				timer = SystemTime::now();
+			}
+
+			let msg = rx.try_recv();
 			match msg {
 				Ok(v) => {
 					let val: objects::IncrementalMessage = serde_json::from_str(v.as_str()).unwrap();
@@ -105,14 +119,14 @@ fn main() {
 					else if side == '2' {
 						sells_by_price.insert(val.get_price(), val.get_orders());
 					}
-					// combine orders in one vector to represent current market by price
-					// state vector sorted by increasing price
+
 					let mut state: Vec<&Vec<Order>> = Vec::new();
 					let mut state_sells: Vec<&Vec<Order>> = Vec::new();
 
 					for vector in sells_by_price.values() {
 						state_sells.push(vector);
 					}
+
 					state_sells.sort();
 					state_sells.reverse();
 					for vector in buys_by_price.values() {
@@ -120,15 +134,11 @@ fn main() {
 					}
 					state.sort();
 					state.append(&mut state_sells);
-					
-					println!("state: {:?}", state);
-					publish_snaphot(serde_json::to_string(&state).unwrap(), &sock);
+					cur_state = serde_json::to_string(&state).unwrap();
 				}
-				Err(r) => continue,
-				
-			}		
-		}	
-
+				Err(r) => {},				
+			}
+		}
 	});
 
 	loop {

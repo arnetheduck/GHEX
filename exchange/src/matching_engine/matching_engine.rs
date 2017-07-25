@@ -387,7 +387,7 @@ impl MatchingEngine {
     fn incremental_feed(&mut self, price_affected: &i64) {
         self.seq_number += 1;
 
-        let message = IncrementalMessage::new(self.seq_number, self.get_orders_by_price(&price_affected));
+        let message = IncrementalMessage::new(self.seq_number, self.get_orders_by_price(&price_affected), *price_affected);
 
         // Convert incremental feed to JSON format for multicasting
         let incre_feed = serde_json::to_string(&message).unwrap();
