@@ -94,15 +94,19 @@ fn main() {
 
 		// combine orders in one vector to represent current market by price
 		// state vector sorted by increasing price
-		let init_state: Vec<&Vec<Order>> = Vec::new();
-		let mut cur_state = serde_json::to_string(&init_state).unwrap();
+		let init_state: Vec<Vec<Order>> = Vec::new();
+		// let mut cur_state = serde_json::to_string(&init_state).unwrap();
+		let mut cur_state: Vec<Vec<Order>> = Vec::new();
+		let mut last_msg_index: i64 = 0;
 
 		let mut timer = SystemTime::now();
 		loop {
 			let cur_time = SystemTime::now();
 			if cur_time.duration_since(timer).unwrap() >= Duration::new(RECOVERY_PERIOD, 0) {
 				// println!("state: {:?}", cur_state);
-				publish_snaphot(cur_state.clone(), &sock);
+				let rec_feed = objects::RecoveryFeed::new(last_msg_index, cur_state.clone());
+
+				publish_snaphot(serde_json::to_string(&rec_feed).unwrap(), &sock);
 				timer = SystemTime::now();
 			}
 
@@ -119,22 +123,23 @@ fn main() {
 					else if side == '2' {
 						sells_by_price.insert(val.get_price(), val.get_orders());
 					}
+					last_msg_index = val.get_num();
 
-					let mut state: Vec<&Vec<Order>> = Vec::new();
-					let mut state_sells: Vec<&Vec<Order>> = Vec::new();
+					let mut state: Vec<Vec<Order>> = Vec::new();
+					let mut state_sells: Vec<Vec<Order>> = Vec::new();
 
 					for vector in sells_by_price.values() {
-						state_sells.push(vector);
+						state_sells.push(vector.clone());
 					}
 
 					state_sells.sort();
 					state_sells.reverse();
 					for vector in buys_by_price.values() {
-						state.push(vector);
+						state.push(vector.clone());
 					}
 					state.sort();
 					state.append(&mut state_sells);
-					cur_state = serde_json::to_string(&state).unwrap();
+					cur_state = state;
 				}
 				Err(r) => {},				
 			}
