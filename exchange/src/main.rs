@@ -116,13 +116,19 @@ fn main() {
 					let val: objects::IncrementalMessage = serde_json::from_str(v.as_str()).unwrap();
 					
 					// update state of matching engine
-					let side = val.get_orders()[0].get_side();
-					if side == '1' {
-						buys_by_price.insert(val.get_price(), val.get_orders());
+					if (val.get_orders().len() > 0) {
+						let side = val.get_orders()[0].get_side();
+						if side == '1' {
+							buys_by_price.insert(val.get_price(), val.get_orders());
+						}
+						else if side == '2' {
+							sells_by_price.insert(val.get_price(), val.get_orders());
+						}
+					} else {
+						buys_by_price.remove(&val.get_price());
+						sells_by_price.remove(&val.get_price());
 					}
-					else if side == '2' {
-						sells_by_price.insert(val.get_price(), val.get_orders());
-					}
+
 					last_msg_index = val.get_num();
 
 					let mut state: Vec<Vec<Order>> = Vec::new();
