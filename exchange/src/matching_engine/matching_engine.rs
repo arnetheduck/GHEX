@@ -8,8 +8,10 @@ use std::collections::HashMap;
 use self::linked_hash_map::LinkedHashMap;
 use std::sync::mpsc;
 
+// IP address of the computer running main.rs (MUST specify the PORT)
 const SERVER_ADDRESS: &str = "192.168.1.8:21003";
-const MULTICAST_GROUP_ADDRESS: &str = "239.194.5.3:21003";
+// IP address of the multicast group for Incremental Feed (MUST specify the PORT)
+const INCREMENTAL_FEED_MULTICAST_GROUP_ADDRESS: &str = "239.194.5.3:21003";
 
 pub struct MatchingEngine {
     /* 
@@ -387,7 +389,7 @@ impl MatchingEngine {
     fn incremental_feed(&mut self, price_affected: &i64) {
         self.seq_number += 1;
 
-        let message = IncrementalMessage::new(self.seq_number, self.get_orders_by_price(&price_affected), *price_affected);
+        let message = IncrementalMessage::new(*price_affected, self.seq_number, self.get_orders_by_price(&price_affected));
 
         // Convert incremental feed to JSON format for multicasting
         let incre_feed = serde_json::to_string(&message).unwrap();
@@ -401,6 +403,6 @@ impl MatchingEngine {
 
     fn multicast(&self, contents: String) {
         let send_buffer = contents.into_bytes();
-        self.socket.send_to(&send_buffer, MULTICAST_GROUP_ADDRESS);
+        self.socket.send_to(&send_buffer, INCREMENTAL_FEED_MULTICAST_GROUP_ADDRESS);
     }
 }
