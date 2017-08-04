@@ -1,3 +1,11 @@
+/**
+	MAIN
+
+	This is a main program that runs the exchange. This program contains 2 threads:
+		- 1 thread to multicast recovery feed
+		- 1 (main) thread to allow users to perform operations on the exchange (INSERT, DELETE, UPDATE)
+*/
+
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
@@ -99,6 +107,10 @@ fn update_existing_order(match_eng: &mut matching_engine::MatchingEngine) {
 
 /**
 	This function multicasts a recovery feed to RECOVERY_MULTICAST_GROUP_ADDRESS
+
+	@params
+		state: the state to be published
+		socket: the socket for multicasting
 */
 fn publish_snaphot(state: String, socket: &UdpSocket) {
 	// Recovery feed must be converted to bytes for multicasting

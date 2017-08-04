@@ -23,7 +23,7 @@ pub struct RecoveryFeed {
 }
 
 impl RecoveryFeed {
-    /*
+    /**
         Constructor
         @params 
             last_msg_index: Index of the last sequential meesage, assigned by the exchange

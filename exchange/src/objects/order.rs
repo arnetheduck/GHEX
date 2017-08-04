@@ -35,7 +35,7 @@ pub struct Order {
 }
 
 impl Order {
-    /*
+    /**
         Constructor
         @params 
             m_qty: order's quantity
@@ -90,7 +90,7 @@ impl Order {
         self.transact_time.clone()
     }
 
-    /* 
+    /**
         Set new ID for order (used by the exchange)
         @params
             m_id: new ID
@@ -99,7 +99,7 @@ impl Order {
         self.id = m_id.clone();
     }    
 
-    /* 
+    /**
         Set new quantity for order
         @params
             m_qty: new quantity
@@ -108,7 +108,7 @@ impl Order {
         self.order_qty = m_qty;
     }    
 
-    /* 
+    /**
         Set new price for order
         @params
             m_price: new price
@@ -117,7 +117,7 @@ impl Order {
         self.price = m_price;
     }
 
-    /* 
+    /**
         Set new side for order
         @params
             m_side: new side
@@ -126,7 +126,7 @@ impl Order {
         self.side = m_side;
     }    
 
-    /* 
+    /**
         Set new transaction time for order
         @params
             m_time: new transaction time
@@ -138,7 +138,7 @@ impl Order {
 
 impl Eq for Order {}
 
-/*
+/**
     This function defines ordering of the orders regarding price/time priority.
     Priority of an order is assessed following the rules:
         1. Orders with different prices are ranked by their prices

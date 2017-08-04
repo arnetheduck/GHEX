@@ -31,7 +31,7 @@ pub struct IncrementalMessage {
 }
 
 impl IncrementalMessage {
-    /*
+    /**
         Constructor
         @params 
             p_in: price affected
