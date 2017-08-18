@@ -10,7 +10,7 @@ Current iteration (version 1): Users send requests to matching engine via a basi
 
 **Setup and Running:**
 
-Run the matching engine using *cargo run*
+cd into the exchange/ directory and run the matching engine using *cargo run*
 
 Some setup is required if a user/client wishes to subscribe to the MDS feed(s):
 
@@ -34,9 +34,27 @@ If the client isn't receiving data, double check the following:
 **Examples:**
 
 - Inserting an order:
+
 ![Alt text](/images/insert.png?raw=true)
+Buy orders are listed in the format '[qty](ID: #)' on the left of the price column, sell orders are listed on the right
+
+![Alt text](/images/insert_inc.png?raw=true)
+If a client is subscribed to the incremental feed, it should receive an update once the order gets inserted (currently, the feed just broadcasts affected orders in the orderbook, which in this case would be the order just inserted).
+
+![Alt text](/images/insert_snap.png?raw=true)
+If a client is subscribed to the snapshot feed, the client should receive updates at an interval specified by RECOVERY_PERIOD. When the market is empty, the feed should broadcast empty state. Once an order gets inserted, the state will get updated, and the next snapshot sent should contain the new order.
 
 
+- Order priority
+
+![Alt text](/images/priority.png?raw=true)
+Orders at the same price are listed in order based on timestamp: from right to left for buys, left to right for sells (i.e. orders closer to the center column have higher priority)
+
+
+- Matching
+
+![Alt text](/images/matching.png?raw=true)
+When an inserted order triggers a match, it will be reflected in the output, as can be seen above. The higher priority buy order was matched first, then the remaining quantity of 1 was matched with quantity 1 from the remaining buy order.
 
 **Testing:**
 
