@@ -1,28 +1,47 @@
 # GHEX: Grasshopper Exchange Simulator
 
 
-Description:
+**Description:**
+
+An exchange simulator that will be used for testing new features/algorithms, by allowing for the manipulation of specific conditions and set up of different scenarios under which to perform trades.
+
+Current iteration (version 1): Users send requests to matching engine via a basic command-line interface, which allows a user to insert, update, or delete an order. Users specify buy/sell side, price, and quantity, and the matching engine processes the request, performs trades, and updates the orderbook. Basic MDS delivery is also implemented. Users can subscribe to the incremental feed and the recovery (snapshot) feed to receive real-time updates as events occur in the matching engine.
+
+
+**Setup and Running:**
+
+Run the matching engine using *cargo run*
+
+Some setup is required if a user/client wishes to subscribe to the MDS feed(s):
+
+One machine:
+
+An example client program is located at src/example_client.rs. Open 2 terminals, start up the client first, then run the matching engine. Be sure the SERVER_ADDRESS the matching engine is bound to is 'Wireless LAN adapter Wi-Fi' found under ipconfig. Examples are provided below.
+
+Two machines:
+
+Currently, an ethernet cord is needed for communication between 2 machines. After connecting the machines, start up the client on one machine, then run the matching engine on the other. 
+
+If the client isn't receiving data, double check the following:
+
+- Type *netsh interface ip show joins* to double check that the multicast address to which the client is listening is listed under the Ethernet interface. If it is listed elsewhere, then those interfaces have higher priority than Ethernet, so be sure to disable those before running the client.
+
+- Check that the SERVER_ADDRESS the matching engine is bound to is the 'Ethernet adapter Ethernet' address found under ipconfig.
+
+- In example_client.rs, check that the port bound to by the client matches the port of the feed address
+
+
+**Examples:**
+
+- Inserting an order:
+![Alt text](/images/insert.png?raw=true)
 
 
 
+**Testing:**
 
-Setup:
-
-
-
-
-
-Running:
-
-
-
-
-
-Examples:
-
-
-
-
-Testing:
 The test module, located in src/lib.rs contains case/unit tests. 
+
 Be sure to run using the following command: 
+
+*cargo test -- --test-threads=1*
