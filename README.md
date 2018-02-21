@@ -69,7 +69,7 @@ Be sure to run using the following command:
 
 *cargo test -- --test-threads=1*
 
-** License:**
+**License:**
 
 The code is licensed under the Apache License 2.0. Contributions are welcome.
 Copyright (c) 2018 Grasshopper Asia Pte Ltd, unless otherwise noted.
